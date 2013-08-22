@@ -6,20 +6,33 @@ import Data.List.Split (chunksOf)
 import Data.Maybe (isJust)
 import Text.Read (readMaybe)
 
+-- | Storage for the board state.
 type Board  = IOArray (Int, Int) Square
+
+-- | Individual squares of the board are either empty ('Nothing')
+-- | or a Player.
 type Square = Maybe Player
+
+-- | Players are represented as 'X' or 'O'.  This is used
+-- | to maintain the game state while being played.
 data Player  = X | O deriving (Show, Read, Eq)
+
+-- | There are three possible states the game can be in.
+-- | The game can either be won by a player, ended with a draw,
+-- | or is still in progress.
 data GameState = Won Player
                | Draw
                | InProgress
                deriving (Show, Read)
 
+-- | One time introduction and bootstrap for the game loop.
 main = do
     putStr $  "TicTacToe!\n"
            ++ "----------\n"
            ++ "\n"
     newEmptyBoard >>= loop X
 
+-- | The main game loop.
 loop :: Player -> Board -> IO ()
 loop player board = do
     putStrLn =<< showBoard board
@@ -47,6 +60,7 @@ loop player board = do
                     Just _  -> putStrLn "Square filled already." >> getCoordinate
             Nothing -> putStrLn "Invalid Coordinate." >> getCoordinate
 
+-- | Creates a new empty board to play on.
 newEmptyBoard :: IO Board
 newEmptyBoard = newListArray ((0,0), (2,2)) $ replicate 9 Nothing
 
@@ -55,6 +69,9 @@ newEmptyBoard = newListArray ((0,0), (2,2)) $ replicate 9 Nothing
 boardToSquares :: Board -> IO [[Square]]
 boardToSquares b = liftM (chunksOf 3) (getElems b)
 
+-- | Generates a string version of the board state
+-- | from the Board directly.  This basically just glues
+-- | 'showBoard' and 'showSquares' together.
 showBoard :: Board -> IO String
 showBoard b = liftM showSquares (boardToSquares b)
 
