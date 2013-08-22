@@ -1,8 +1,6 @@
-import Control.Applicative ((<$>))
-import Control.Monad (liftM, when)
-import Data.Array
-import Data.Array.IO
-import Data.Array.MArray
+import Control.Monad (liftM)
+import Data.Array.IO (IOArray)
+import Data.Array.MArray (newListArray, readArray, writeArray, getElems)
 import Data.List (find, intersperse, transpose)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust)
