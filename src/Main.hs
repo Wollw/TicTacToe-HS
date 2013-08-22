@@ -4,6 +4,7 @@ import Data.Array.MArray (newListArray, readArray, writeArray, getElems)
 import Data.List (find, intersperse, transpose)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust)
+import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 
 -- | Storage for the board state.
@@ -42,8 +43,10 @@ loop player board = do
     placePiece board player coordinate
     squares <- boardToSquares board
     case gameState squares of
-        Won p -> putStrLn $ "Player " ++ show p ++ " won!"
-        Draw  -> putStrLn "The game resulted in a draw!"
+        Won p -> do putStrLn =<< showBoard board 
+                    putStrLn $ "Player " ++ show p ++ " won!"
+        Draw  -> do putStrLn =<< showBoard board 
+                    putStrLn "The game resulted in a draw!"
         InProgress -> loop player' board
   where
     player' = if player == X then O else X
@@ -51,13 +54,16 @@ loop player board = do
     getCoordinate :: IO (Int, Int)
     getCoordinate = do
         putStr $ show player ++ ": "
+        hFlush stdout
         str <- getLine
         case readMaybe str of
-            Just coord -> do
-                spaceState <- readArray board coord
-                case spaceState of
-                    Nothing -> return coord
-                    Just _  -> putStrLn "Square filled already." >> getCoordinate
+            Just coord -> case coord <= (2,2) of
+                True -> do
+                    spaceState <- readArray board coord
+                    case spaceState of
+                        Nothing -> return coord
+                        Just _  -> putStrLn "Square filled already." >> getCoordinate
+                False -> putStrLn "Invalid Coordinate." >> getCoordinate
             Nothing -> putStrLn "Invalid Coordinate." >> getCoordinate
 
 -- | Creates a new empty board to play on.
