@@ -5,7 +5,7 @@ name:                TicTacToe
 version:             0.1.0.0
 -- synopsis:            
 -- description:         
-license:             PublicDomain
+license:             MIT
 license-file:        LICENSE
 author:              David Shere
 maintainer:          david.e.shere@gmail.com
