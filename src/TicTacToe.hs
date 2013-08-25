@@ -38,6 +38,7 @@ isValidCoordinate board (x,y) =
                     Just _  -> return False
         else return False
 
+placePiece :: Board -> Player -> (Int, Int) -> IO ()
 placePiece b p c = writeArray b c (Just p)
 
 -- | Creates a new empty board to play on.
@@ -66,4 +67,6 @@ gameState board
         possibleRows board = board ++ transpose board ++ diagonals board
         diagonals [[x1, _,x3]
                   ,[ _,y2, _]
-                  ,[z1, _,z3]] = [[x1,y2,z3],[x3,y2,z1]]
+                  ,[z1, _,z3]] = [ [x1,y2,z3]
+                                 , [x3,y2,z1]
+                                 ]
