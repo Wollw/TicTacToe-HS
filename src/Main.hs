@@ -56,16 +56,14 @@ onLeftMouseButtonPressed mods pos@(Position x y) = do
 
     (BoardState gs) <- getGameAttribute
     isValidCoord <- liftIOtoIOGame $ isValidCoordinate (boardState gs) $(squareCoord size (x,y))
-    case isValidCoord of
-        False -> return ()
-        True  -> do
-            liftIOtoIOGame $ placePiece (boardState gs) (currentPlayer gs) (squareCoord size (x,y))
-            setGameAttribute . BoardState $ gs { currentPlayer = if currentPlayer gs == X then O else X }
-            setObjectCurrentPicture ((+1) . fromEnum . currentPlayer $ gs) obj
-            liftIOtoIOGame $ placePiece (boardState gs) (currentPlayer gs) (squareCoord size (x,y))
+    when isValidCoord $ do
+        liftIOtoIOGame $ placePiece (boardState gs) (currentPlayer gs) (squareCoord size (x,y))
+        setGameAttribute . BoardState $ gs { currentPlayer = if currentPlayer gs == X then O else X }
+        setObjectCurrentPicture ((+1) . fromEnum . currentPlayer $ gs) obj
+        liftIOtoIOGame $ placePiece (boardState gs) (currentPlayer gs) (squareCoord size (x,y))
   where
-    squareCoord (w,h) (x,y) = ( (truncate $ fromIntegral x / (fromIntegral w / 3))
-                              , (truncate $ fromIntegral y / (fromIntegral h / 3))
+    squareCoord (w,h) (x,y) = ( truncate $ fromIntegral x / (fromIntegral w / 3)
+                              , truncate $ fromIntegral y / (fromIntegral h / 3)
                               )
     squareName s p = "square" ++ (show . fst . squareCoord s) p
                               ++ (show . snd . squareCoord s) p
@@ -85,4 +83,4 @@ gameCycle = do
                          funExit
         Draw       -> do printOnPrompt "The game resulted in a draw!"
                          funExit
-        InProgress -> do return ()
+        InProgress -> return ()

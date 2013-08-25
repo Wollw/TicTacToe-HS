@@ -10,10 +10,6 @@ import Data.Maybe (isJust)
 
 import qualified Graphics.UI.Fungen as FGE
 
-import System.IO (hFlush, stdout)
-
-import Text.Read (readMaybe)
-
 -- | Storage for the board state.
 type Board  = IOArray (Int, Int) Square
 
@@ -33,54 +29,14 @@ data GameState = Won Player
                | InProgress
                deriving (Show, Read)
 
--- | One time setup and bootstrap for the game loop.
---main = do
---    putStr $  "TicTacToe!\n"
---           ++ "----------\n"
---           ++ "\n"
---    newEmptyBoard >>= loop X
-
--- | The main game loop.
-loop :: Player -> Board -> IO ()
-loop player board = do
-    putStrLn =<< showBoard board
-    coordinate <- getCoordinate
-    putStrLn ""
-
-    placePiece board player coordinate
-    squares <- boardToSquares board
-    case gameState squares of
-        Won p -> do putStrLn =<< showBoard board 
-                    putStrLn $ "Player " ++ show p ++ " won!"
-        Draw  -> do putStrLn =<< showBoard board 
-                    putStrLn "The game resulted in a draw!"
-        InProgress -> loop player' board
-  where
-    player' = if player == X then O else X
-    placePiece b p c = writeArray b c (Just p)
-    getCoordinate :: IO (Int, Int)
-    getCoordinate = do
-        putStr $ show player ++ ": "
-        hFlush stdout
-        str <- getLine
-        case readMaybe str of
-            Just coord -> case coord <= (2,2) of
-                True -> do
-                    spaceState <- readArray board coord
-                    case spaceState of
-                        Nothing -> return coord
-                        Just _  -> putStrLn "Square filled already." >> getCoordinate
-                False -> putStrLn "Invalid Coordinate." >> getCoordinate
-            Nothing -> putStrLn "Invalid Coordinate." >> getCoordinate
-
 isValidCoordinate :: Board -> (Int,Int) -> IO Bool
 isValidCoordinate board (x,y) = 
-    case (x,y) <= (2,2) of
-        True -> do spaceState <- readArray board (x,y)
-                   case spaceState of
-                       Nothing -> return True
-                       Just _  -> return False
-        False -> return False
+    if (x,y) <= (2,2)
+        then do spaceState <- readArray board (x,y)
+                case spaceState of
+                    Nothing -> return True
+                    Just _  -> return False
+        else return False
 
 placePiece b p c = writeArray b c (Just p)
 
@@ -92,22 +48,6 @@ newEmptyBoard = newListArray ((0,0), (2,2)) $ replicate 9 Nothing
 -- | the board state to the screen.
 boardToSquares :: Board -> IO [[Square]]
 boardToSquares b = liftM (chunksOf 3) (getElems b)
-
--- | Generates a string version of the board state
--- | from the Board directly.  This basically just glues
--- | 'showBoard' and 'showSquares' together.
-showBoard :: Board -> IO String
-showBoard b = liftM showSquares (boardToSquares b)
-
--- | Converts a list of list of squares representing a board state
--- | into a printable string for output.
-showSquares :: [[Square]] -> String
-showSquares = unlines . addBars . (map . map) showSquare . transpose
-    where addBars = intersperse "-----" . map (intersperse '|')
-
--- | Converts a game square into the character used to represent it.
-showSquare :: Square -> Char
-showSquare = head . maybe " " show
 
 -- | Evaluates a board and gives the current status of the game based upon it.
 gameState :: [[Square]] -> GameState
