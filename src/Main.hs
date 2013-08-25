@@ -65,8 +65,8 @@ onLeftMouseButtonPressed mods pos@(Position x y) = do
     squareCoord (w,h) (x,y) = ( truncate $ fromIntegral x / (fromIntegral w / 3)
                               , truncate $ fromIntegral y / (fromIntegral h / 3)
                               )
-    squareName s p = "square" ++ (show . fst . squareCoord s) p
-                              ++ (show . snd . squareCoord s) p
+    squareName s p = "square" ++ showCoord (squareCoord s p)
+    showCoord (x,y) = show x ++ show y
 
 -- Submit as patch?
 getWindowSize :: IOGame t s u v (GLsizei,GLsizei)
