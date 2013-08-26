@@ -1,20 +1,20 @@
 module Main where
 
-import Control.Monad (when)
 import qualified Graphics.UI.GLUT as GLUT (windowSize, get, Size(..))
-import Graphics.UI.Fungen hiding (when)
+import Graphics.UI.Fungen
 import Graphics.Rendering.OpenGL (GLdouble, GLsizei)
 import TicTacToe
 
-data BoardState' = BoardState' { boardState :: Board
-                             , currentPlayer  :: Player
-                             }
+data BoardState' = BoardState' { currentBoardState       :: Board
+                               , currentPlayer    :: Player
+                               , gameInProgress :: Bool
+                               }
 data GameAttribute = BoardState BoardState'
 
 newBoardState :: IO GameAttribute
 newBoardState = do
     board <- newEmptyBoard
-    return . BoardState $ BoardState' board X
+    return . BoardState $ BoardState' board X True
 
 
 type TicTacToeObject = GameObject ()
@@ -51,16 +51,17 @@ createSquare x y = let squarePic = Tex (w/3, h/3) 0
 
 onLeftMouseButtonPressed :: Modifiers -> Position -> TicTacToeAction ()
 onLeftMouseButtonPressed mods pos@(Position x y) = do
-    size <- getWindowSize
-    obj <- findObject (squareName size (x,y)) "squareGroup"
-
     (BoardState gs) <- getGameAttribute
-    isValidCoord <- liftIOtoIOGame $ isValidCoordinate (boardState gs) $(squareCoord size (x,y))
-    when isValidCoord $ do
-        liftIOtoIOGame $ placePiece (boardState gs) (currentPlayer gs) (squareCoord size (x,y))
-        setGameAttribute . BoardState $ gs { currentPlayer = if currentPlayer gs == X then O else X }
-        setObjectCurrentPicture ((+1) . fromEnum . currentPlayer $ gs) obj
-        liftIOtoIOGame $ placePiece (boardState gs) (currentPlayer gs) (squareCoord size (x,y))
+    when (gameInProgress gs) $ do
+        size <- getWindowSize
+        obj <- findObject (squareName size (x,y)) "squareGroup"
+
+        isValidCoord <- liftIOtoIOGame $ isValidCoordinate (currentBoardState gs) $(squareCoord size (x,y))
+        when isValidCoord $ do
+            liftIOtoIOGame $ placePiece (currentBoardState gs) (currentPlayer gs) (squareCoord size (x,y))
+            setGameAttribute . BoardState $ gs { currentPlayer = if currentPlayer gs == X then O else X }
+            setObjectCurrentPicture ((+1) . fromEnum . currentPlayer $ gs) obj
+            liftIOtoIOGame $ placePiece (currentBoardState gs) (currentPlayer gs) (squareCoord size (x,y))
   where
     squareCoord (w,h) (x,y) = ( truncate $ fromIntegral x / (fromIntegral w / 3)
                               , truncate $ fromIntegral y / (fromIntegral h / 3)
@@ -77,10 +78,17 @@ getWindowSize = do
 gameCycle :: TicTacToeAction ()
 gameCycle = do
     (BoardState gs) <- getGameAttribute
-    squares <- liftIOtoIOGame . boardToSquares . boardState $ gs
+    squares <- liftIOtoIOGame . boardToSquares . currentBoardState $ gs
     case gameState squares of
-        Won p      -> do printOnPrompt $ "Player " ++ show p ++ " won!"
-                         funExit
-        Draw       -> do printOnPrompt "The game resulted in a draw!"
-                         funExit
+        Won p      -> gameOver gs $ "Player " ++ show p ++ " wins!"
+        Draw       -> gameOver gs "Draw!"
         InProgress -> return ()
+  where
+    gameOver gs str = do clearSquares
+                         printOnScreen str Fixed8By13 (w/2, h/2) 0 0 0
+                         setGameAttribute $ BoardState $ gs {gameInProgress = False}
+
+    clearSquares = let objNames = [ "square" ++ show x ++ show y | x <- [0..2], y <- [0..2] ]
+                   in flip mapM_ objNames $ \name -> do
+                        obj <- findObject name "squareGroup"
+                        setObjectCurrentPicture 0 obj
