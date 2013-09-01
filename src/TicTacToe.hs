@@ -1,72 +1,63 @@
 module TicTacToe where
 
-import Control.Monad (liftM)
-
-import Data.Array.IO (IOArray)
-import Data.Array.MArray (newListArray, readArray, writeArray, getElems)
-import Data.List (find, intersperse, transpose)
+import Data.Array (Array, listArray, (//), elems, (!))
+import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromJust)
 
-import qualified Graphics.UI.Fungen as FGE
+data GameState = InProgress { player :: Player
+                            , board  :: Squares
+                            }
+               | Won Player | Draw deriving (Show)
 
--- | Storage for the board state.
-type Board  = IOArray (Int, Int) Square
+data Player = X | O deriving (Show, Eq)
 
--- | Individual squares of the board are either empty ('Nothing')
--- | or a Player.
+instance Enum Player where
+    succ O   = X
+    succ X   = O
+    toEnum   = toEnum
+    fromEnum = fromEnum
+
+type Squares = Array Position Square
 type Square = Maybe Player
+type Position = (Integer, Integer)
 
--- | Players are represented as 'X' or 'O'.  This is used
--- | to maintain the game state while being played.
-data Player  = X | O deriving (Show, Read, Eq, Enum)
+-- | A blank game state representing the initial
+--   state of a game of TicTacToe.
+newGame :: GameState
+newGame = InProgress X emptyBoard
 
--- | There are three possible states the game can be in.
--- | The game can either be won by a player, ended with a draw,
--- | or is still in progress.
-data GameState = Won Player
-               | Draw
-               | InProgress
-               deriving (Show, Read)
+-- | A 3x3 array of Squares representing a board with
+--   no pieces placed on it.
+emptyBoard :: Squares
+emptyBoard = listArray ((0,0),(2,2)) $ replicate 9 $ Nothing
 
-isValidCoordinate :: Board -> (Int,Int) -> IO Bool
-isValidCoordinate board (x,y) = 
-    if (x,y) <= (2,2)
-        then do spaceState <- readArray board (x,y)
-                case spaceState of
-                    Nothing -> return True
-                    Just _  -> return False
-        else return False
+-- | This operator attempts to place a player's piece
+--   on the board.
+(/?/) :: Squares -> Position -> Player -> Maybe Squares
+(/?/) squares position player = case squares ! position of
+    Nothing -> Just $ squares // [(position, Just player)]
+    _ -> Nothing
 
-placePiece :: Board -> Player -> (Int, Int) -> IO ()
-placePiece b p c = writeArray b c (Just p)
-
--- | Creates a new empty board to play on.
-newEmptyBoard :: IO Board
-newEmptyBoard = newListArray ((0,0), (2,2)) $ replicate 9 Nothing
-
--- | Creates a list of lists of Squares from a Board used for printing
--- | the board state to the screen.
-boardToSquares :: Board -> IO [[Square]]
-boardToSquares b = liftM (chunksOf 3) (getElems b)
-
--- | Evaluates a board and gives the current status of the game based upon it.
-gameState :: [[Square]] -> GameState
-gameState board
-    | draw board          = Draw
-    | won board == Just X = Won X
-    | won board == Just O = Won O
-    | otherwise           = InProgress
+-- | Evaluates a GameState to determine what the next game state
+--   should be.
+nextGameState :: GameState -> GameState
+nextGameState gs@(InProgress player board) = case nextGameState' board of
+    gs@(InProgress player board) -> gs { player = succ player }
+    gs -> gs
   where
-    draw      = notElem Nothing . concat
-    won board = case find full $ possibleRows board of
-        Just xs -> head xs
-        Nothing -> Nothing
+    nextGameState' b = case find full $ rows board of
+        Just xs -> Won . fromJust . head $ xs
+        Nothing -> if notElem Nothing . concat $ boardList
+            then Draw
+            else gs
       where
+        boardList = chunksOf 3 . elems $ board
+        rows board = boardList ++ transpose boardList ++ diagonals boardList
         full [x,y,z] = x == y && y == z && isJust x
-        possibleRows board = board ++ transpose board ++ diagonals board
         diagonals [[x1, _,x3]
                   ,[ _,y2, _]
                   ,[z1, _,z3]] = [ [x1,y2,z3]
                                  , [x3,y2,z1]
                                  ]
+nextGameState gs = gs

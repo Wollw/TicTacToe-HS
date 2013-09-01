@@ -1,93 +1,33 @@
-module Main where
-
-import qualified Graphics.UI.GLUT as GLUT (windowSize, get, Size(..))
-import Graphics.UI.Fungen
-import Graphics.Rendering.OpenGL (GLdouble, GLsizei)
 import TicTacToe
-
-data GameAttribute = BoardState { currentBoardState       :: Board
-                               , currentPlayer    :: Player
-                               , gameInProgress :: Bool
-                               }
-
-newBoardState :: IO GameAttribute
-newBoardState = do
-    board <- newEmptyBoard
-    return $ BoardState board X True
-
-
-type TicTacToeObject = GameObject ()
-type TicTacToeAction a = IOGame GameAttribute () () () a
-
-width = 256
-height = 256
-w = fromIntegral width  :: GLdouble
-h = fromIntegral height :: GLdouble
-
-magenta = Just [(255, 0, 255)]
+import Data.Tuple (swap)
+import Data.Array (elems)
+import Data.List
+import Data.List.Split
+import Control.Monad
+import Control.Monad.State
 
 main :: IO ()
-main = let winConfig = ((0,0), (width, height), "TicTacToe")
-           bmpList   = [ ("res/border.bmp",  Nothing)
-                       , ("res/playerX.bmp", magenta)
-                       , ("res/playerO.bmp", magenta)
-                       ]
-           squares   = [ createSquare x y | x <- [0..2], y <- [0..2] ]
-           objects   = [ objectGroup "squareGroup" squares ]
-           gameMap   = textureMap 0 (w/3) (h/3) w h
-           bindings  = [ (Char 'q', Press, \_ _ -> funExit)
-                       , (MouseButton LeftButton, Press, onLeftMouseButtonPressed)
-                       ]
-       in do
-        gameState <- newBoardState 
-        funInit winConfig gameMap objects () gameState bindings gameCycle Idle bmpList
+main = runGame newGame
+runGame gs@(InProgress player board) = do
+    putStrLn "=========="
+    putStrLn . ppGameState $ gs
+    putStrLn "Enter position:"
+    pos <- fmap (swap . read) $ getLine
+    case board /?/ pos $ player of
+        Nothing -> putStrLn "Invalid position." >> runGame gs
+        Just board' -> case nextGameState $ gs {board = board'} of
+            Won p -> putStrLn $ "Player " ++ show p ++ " wins."
+            Draw  -> putStrLn "Draw."
+            gs    -> runGame gs
 
-createSquare :: (Show a, Integral a) => a -> a -> GameObject ()
-createSquare x y = let squarePic = Tex (w/3, h/3) 0
-                       squarePos = (   w/6 + (fromIntegral x * w/3)
-                                   , 5*h/6 - (fromIntegral y * h/3))
-                   in object ("square" ++ show x ++ show y) squarePic False squarePos (0,0) ()
+ppGameState :: GameState -> String
+ppGameState (InProgress player board) =
+        "Player: " ++ show player ++ "\n"
+     ++ " Board:\n"
+     ++ (concat . intersperse "\n" . chunksOf 3 . concat . map ppSquare . elems $ board)
 
-onLeftMouseButtonPressed :: Modifiers -> Position -> TicTacToeAction ()
-onLeftMouseButtonPressed mods pos@(Position x y) = do
-    gs <- getGameAttribute
-    when (gameInProgress gs) $ do
-        size <- getWindowSize
-        obj <- findObject (squareName size (x,y)) "squareGroup"
+ppSquare :: Square -> String
+ppSquare Nothing = " "
+ppSquare (Just player)  = show player
 
-        isValidCoord <- liftIOtoIOGame $ isValidCoordinate (currentBoardState gs) $(squareCoord size (x,y))
-        when isValidCoord $ do
-            liftIOtoIOGame $ placePiece (currentBoardState gs) (currentPlayer gs) (squareCoord size (x,y))
-            setGameAttribute $ gs { currentPlayer = if currentPlayer gs == X then O else X }
-            setObjectCurrentPicture ((+1) . fromEnum . currentPlayer $ gs) obj
-            liftIOtoIOGame $ placePiece (currentBoardState gs) (currentPlayer gs) (squareCoord size (x,y))
-  where
-    squareCoord (w,h) (x,y) = ( truncate $ fromIntegral x / (fromIntegral w / 3)
-                              , truncate $ fromIntegral y / (fromIntegral h / 3)
-                              )
-    squareName s p = "square" ++ showCoord (squareCoord s p)
-    showCoord (x,y) = show x ++ show y
 
--- Submit as patch?
-getWindowSize :: IOGame t s u v (GLsizei,GLsizei)
-getWindowSize = do 
-    (GLUT.Size w h) <- liftIOtoIOGame . GLUT.get $ GLUT.windowSize
-    return (w,h)
-
-gameCycle :: TicTacToeAction ()
-gameCycle = do
-    gs <- getGameAttribute
-    squares <- liftIOtoIOGame . boardToSquares . currentBoardState $ gs
-    case gameState squares of
-        Won p      -> gameOver gs $ "Player " ++ show p ++ " wins!"
-        Draw       -> gameOver gs "Draw!"
-        InProgress -> return ()
-  where
-    gameOver gs str = do clearSquares
-                         printOnScreen str Fixed8By13 (w/2, h/2) 0 0 0
-                         setGameAttribute $ gs {gameInProgress = False}
-
-    clearSquares = let objNames = [ "square" ++ show x ++ show y | x <- [0..2], y <- [0..2] ]
-                   in flip mapM_ objNames $ \name -> do
-                        obj <- findObject name "squareGroup"
-                        setObjectCurrentPicture 0 obj

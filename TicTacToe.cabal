@@ -18,4 +18,4 @@ executable TicTacToe
   main-is:             Main.hs
   hs-source-dirs:      src
   -- other-modules:       
-  build-depends:       base ==4.6.*, FunGEn, array, containers, split, OpenGL, transformers, GLUT
+  build-depends:       base ==4.6.*, array, split, mtl
