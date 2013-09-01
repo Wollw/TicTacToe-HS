@@ -11,6 +11,7 @@ import Data.Tuple (swap)
 import Text.Read (readMaybe)
 
 import TicTacToe ( GameState(..)
+                 , Board
                  , Square
                  , newGame
                  , (/?/)
@@ -25,26 +26,29 @@ main = forever $ do
     runGame newGame
 
 runGame :: GameState -> IO ()
-runGame gs@(InProgress player board) = do
+runGame gs = do
     putStrLn "Enter position in format (x,y):"
     pos <- fmap (swap . fromMaybe (-1, -1) . readMaybe) getLine
-    case board /?/ pos $ player of
-        Just board' -> let gs' = gs {board = board'}
-                       in do putStrLn "=========="
-                             putStrLn . printGameState $ gs'
-                             case nextGameState gs' of
-                                 gs''@(InProgress _ _) -> runGame gs''
-                                 gs'' -> putStrLn . printGameState $ gs''
+    case gs /?/ pos of
+        Just gs' -> case nextGameState gs' of
+                        gs''@(InProgress _ _) -> do
+                            putStrLn "=========="
+                            putStrLn . printGameState $ gs''
+                            runGame gs''
+                        gs'' -> do
+                            putStrLn . printBoard . board $ gs'
+                            putStrLn . printGameState $ gs''
         Nothing -> do putStrLn "Invalid position."
                       runGame gs
 
 printGameState :: GameState -> String
-printGameState (InProgress player board) =
-        "Player: " ++ show player ++ "\n"
-     ++ " Board:\n"
-     ++ (intercalate "\n" . chunksOf 3 . concatMap printSquare . elems $ board)
+printGameState (InProgress player board) = "Player: " ++ show player ++ "\n"
+                                        ++ " Board:\n" ++ printBoard board
 printGameState Draw    = "The game ended in a draw."
 printGameState (Won p) = "The game was won by player " ++ show p ++ "."
+
+printBoard :: Board -> String
+printBoard = intercalate "\n" . chunksOf 3 . concatMap printSquare . elems
 
 printSquare :: Square -> String
 printSquare Nothing        = " "

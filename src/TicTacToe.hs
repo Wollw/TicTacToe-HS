@@ -40,16 +40,17 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 
 -- | This operator attempts to place a player's piece
 --   on the board.
-(/?/) :: Board -> Position -> Player -> Maybe Board
-(/?/) squares position player =
+(/?/) :: GameState -> Position -> Maybe GameState
+gs@(InProgress player board) /?/ position =
     if validIndex position
-    then case squares ! position of
-                Nothing -> Just $ squares // [(position, Just player)]
+    then case board ! position of
+                Nothing -> Just $ gs {board = board // [(position, Just player)]}
                 _       -> Nothing
     else Nothing
   where
-    validIndex pos = pos <= (snd . bounds $ squares)
-                  && pos >= (fst . bounds $ squares)
+    validIndex pos = pos <= (snd . bounds $ board)
+                  && pos >= (fst . bounds $ board)
+gs /?/ _ = Nothing
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be.
