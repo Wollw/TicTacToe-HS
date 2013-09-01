@@ -1,6 +1,6 @@
 module TicTacToe where
 
-import Data.Array (Array, listArray, (//), elems, (!))
+import Data.Array (Array, bounds, listArray, (//), elems, (!))
 import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
@@ -8,7 +8,9 @@ import Data.Maybe (isJust, fromJust)
 data GameState = InProgress { player :: Player
                             , board  :: Squares
                             }
-               | Won Player | Draw deriving (Show)
+               | Won Player
+               | Draw
+               deriving (Show)
 
 data Player = X | O deriving (Show, Eq)
 
@@ -35,9 +37,15 @@ emptyBoard = listArray ((0,0),(2,2)) $ replicate 9 Nothing
 -- | This operator attempts to place a player's piece
 --   on the board.
 (/?/) :: Squares -> Position -> Player -> Maybe Squares
-(/?/) squares position player = case squares ! position of
-    Nothing -> Just $ squares // [(position, Just player)]
-    _ -> Nothing
+(/?/) squares position player =
+    if validIndex position
+    then case squares ! position of
+                Nothing -> Just $ squares // [(position, Just player)]
+                _ -> Nothing
+    else Nothing
+  where
+    validIndex pos = pos <= (snd . bounds $ squares)
+                  && pos >= (fst . bounds $ squares)
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be.

@@ -1,24 +1,36 @@
-import TicTacToe
-import Data.Tuple (swap)
+module Main where
+
+import Control.Monad (forever)
 import Data.Array (elems)
-import Data.List
-import Data.List.Split
-import Control.Monad
-import Control.Monad.State
+import Data.List (concatMap, intercalate)
+import Data.List.Split (chunksOf)
+import Data.Maybe (fromMaybe)
+import Data.Tuple (swap)
+import Text.Read (readMaybe)
+import TicTacToe ( GameState(..)
+                 , Square
+                 , newGame
+                 , (/?/)
+                 , nextGameState)
 
 main :: IO ()
-main = runGame newGame
+main = forever $ do
+    putStrLn "=========="
+    putStrLn "NEW GAME"
+    runGame newGame
+
+runGame :: GameState -> IO ()
 runGame gs@(InProgress player board) = do
     putStrLn "=========="
     putStrLn . ppGameState $ gs
     putStrLn "Enter position:"
-    pos <- fmap (swap . read) getLine
+    pos <- fmap (fromMaybe (-1, -1) . readMaybe) getLine
     case board /?/ pos $ player of
-        Nothing -> putStrLn "Invalid position." >> runGame gs
         Just board' -> case nextGameState $ gs {board = board'} of
             Won p -> putStrLn $ "Player " ++ show p ++ " wins."
-            Draw  -> putStrLn "Draw."
+            Draw  -> putStrLn "The game ended in a draw."
             gs    -> runGame gs
+        Nothing -> putStrLn "Invalid position." >> runGame gs
 
 ppGameState :: GameState -> String
 ppGameState (InProgress player board) =
