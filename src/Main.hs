@@ -1,6 +1,6 @@
 module Main where
 
-import Control.Monad (forever, when)
+import Control.Monad (forever)
 
 import Data.Array (elems)
 import Data.List (concatMap, intercalate)
