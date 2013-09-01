@@ -48,8 +48,7 @@ gs@(InProgress player board) /?/ position =
                 _       -> Nothing
     else Nothing
   where
-    validIndex pos = pos <= (snd . bounds $ board)
-                  && pos >= (fst . bounds $ board)
+    validIndex (x,y) = x >= 1 && y >= 1 && x <= 3 && y <= 3
 gs /?/ _ = Nothing
 
 -- | Evaluates a GameState to determine what the next game state
@@ -67,8 +66,7 @@ nextGameState gs@(InProgress player board) = case nextGameState' board of
       where
         full [x,y,z] = x == y && y == z && isJust x
         toLists      = chunksOf 3 . elems
-        transpose b  = ixmap (swap l, swap u) swap b where (l,u) = bounds b
-        rows b       = toLists b ++ (toLists . transpose) b ++ diagonals b
+        rows b       = toLists b ++ (transpose . toLists) b ++ diagonals b
         diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
                        , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
 nextGameState gs = gs
