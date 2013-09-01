@@ -10,7 +10,7 @@ import Prelude hiding (succ)
 import qualified Prelude
 
 data GameState = InProgress { player :: Player
-                            , board  :: Squares
+                            , board  :: Board
                             }
                | Won Player
                | Draw
@@ -25,7 +25,7 @@ succ O = X
 succ p = Prelude.succ p
 
 -- | The representation of the squares of the TicTacToe board.
-type Squares = Array Position Square
+type Board = Array Position Square
 
 type Square = Maybe Player
 
@@ -38,17 +38,17 @@ newGame = InProgress X emptyBoard
 
 -- | A 3x3 array of Squares representing a board with
 --   no pieces placed on it.
-emptyBoard :: Squares
+emptyBoard :: Board
 emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 
 -- | This operator attempts to place a player's piece
 --   on the board.
-(/?/) :: Squares -> Position -> Player -> Maybe Squares
+(/?/) :: Board -> Position -> Player -> Maybe Board
 (/?/) squares position player =
     if validIndex position
     then case squares ! position of
                 Nothing -> Just $ squares // [(position, Just player)]
-                _ -> Nothing
+                _       -> Nothing
     else Nothing
   where
     validIndex pos = pos <= (snd . bounds $ squares)
