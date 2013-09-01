@@ -12,7 +12,7 @@ runGame gs@(InProgress player board) = do
     putStrLn "=========="
     putStrLn . ppGameState $ gs
     putStrLn "Enter position:"
-    pos <- fmap (swap . read) $ getLine
+    pos <- fmap (swap . read) getLine
     case board /?/ pos $ player of
         Nothing -> putStrLn "Invalid position." >> runGame gs
         Just board' -> case nextGameState $ gs {board = board'} of
@@ -24,10 +24,8 @@ ppGameState :: GameState -> String
 ppGameState (InProgress player board) =
         "Player: " ++ show player ++ "\n"
      ++ " Board:\n"
-     ++ (concat . intersperse "\n" . chunksOf 3 . concat . map ppSquare . elems $ board)
+     ++ (intercalate "\n" . chunksOf 3 . concatMap ppSquare . elems $ board)
 
 ppSquare :: Square -> String
 ppSquare Nothing = " "
 ppSquare (Just player)  = show player
-
-

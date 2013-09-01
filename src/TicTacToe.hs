@@ -30,7 +30,7 @@ newGame = InProgress X emptyBoard
 -- | A 3x3 array of Squares representing a board with
 --   no pieces placed on it.
 emptyBoard :: Squares
-emptyBoard = listArray ((0,0),(2,2)) $ replicate 9 $ Nothing
+emptyBoard = listArray ((0,0),(2,2)) $ replicate 9 Nothing
 
 -- | This operator attempts to place a player's piece
 --   on the board.
