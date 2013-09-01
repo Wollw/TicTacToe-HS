@@ -17,27 +17,32 @@ main :: IO ()
 main = forever $ do
     putStrLn "=========="
     putStrLn "NEW GAME"
+    putStrLn "=========="
+    putStrLn . printGameState $ newGame
     runGame newGame
 
 runGame :: GameState -> IO ()
 runGame gs@(InProgress player board) = do
-    putStrLn "=========="
-    putStrLn . ppGameState $ gs
-    putStrLn "Enter position:"
-    pos <- fmap (fromMaybe (-1, -1) . readMaybe) getLine
+    putStrLn "Enter position in format (x,y):"
+    pos <- fmap (swap . fromMaybe (-1, -1) . readMaybe) getLine
     case board /?/ pos $ player of
-        Just board' -> case nextGameState $ gs {board = board'} of
-            Won p -> putStrLn $ "Player " ++ show p ++ " wins."
-            Draw  -> putStrLn "The game ended in a draw."
-            gs    -> runGame gs
-        Nothing -> putStrLn "Invalid position." >> runGame gs
+        Just board' -> let gs' = gs {board = board'}
+                       in do putStrLn "=========="
+                             putStrLn . printGameState $ gs'
+                             case nextGameState gs' of
+                                 gs''@(InProgress _ _) -> runGame gs''
+                                 gs'' -> putStrLn . printGameState $ gs''
+        Nothing -> do putStrLn "Invalid position."
+                      runGame gs
 
-ppGameState :: GameState -> String
-ppGameState (InProgress player board) =
+printGameState :: GameState -> String
+printGameState (InProgress player board) =
         "Player: " ++ show player ++ "\n"
      ++ " Board:\n"
-     ++ (intercalate "\n" . chunksOf 3 . concatMap ppSquare . elems $ board)
+     ++ (intercalate "\n" . chunksOf 3 . concatMap printSquare . elems $ board)
+printGameState Draw    = "The game ended in a draw."
+printGameState (Won p) = "The game was won by player " ++ show p ++ "."
 
-ppSquare :: Square -> String
-ppSquare Nothing = " "
-ppSquare (Just player)  = show player
+printSquare :: Square -> String
+printSquare Nothing = " "
+printSquare (Just player)  = show player

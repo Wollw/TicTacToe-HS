@@ -1,9 +1,10 @@
 module TicTacToe where
 
-import Data.Array (Array, bounds, listArray, (//), elems, (!))
+import Data.Array (Array, bounds, listArray, (//), elems, (!), ixmap)
 import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
+import Data.Tuple (swap)
 
 import Prelude hiding (succ)
 import qualified Prelude
@@ -38,7 +39,7 @@ newGame = InProgress X emptyBoard
 -- | A 3x3 array of Squares representing a board with
 --   no pieces placed on it.
 emptyBoard :: Squares
-emptyBoard = listArray ((0,0),(2,2)) $ replicate 9 Nothing
+emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 
 -- | This operator attempts to place a player's piece
 --   on the board.
@@ -62,16 +63,14 @@ nextGameState gs@(InProgress player board) = case nextGameState' board of
   where
     nextGameState' b = case find full $ rows board of
         Just xs -> Won . fromJust . head $ xs
-        Nothing -> if notElem Nothing . concat $ boardList
-            then Draw
-            else gs
+        Nothing -> if notElem Nothing . elems $ board
+                   then Draw
+                   else gs
       where
-        boardList = chunksOf 3 . elems $ board
-        rows board = boardList ++ transpose boardList ++ diagonals boardList
         full [x,y,z] = x == y && y == z && isJust x
-        diagonals [[x1, _,x3]
-                  ,[ _,y2, _]
-                  ,[z1, _,z3]] = [ [x1,y2,z3]
-                                 , [x3,y2,z1]
-                                 ]
+        toLists      = chunksOf 3 . elems
+        transpose b  = ixmap (swap l, swap u) swap b where (l,u) = bounds b
+        rows b       = toLists b ++ (toLists . transpose) b ++ diagonals b
+        diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
+                       , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
 nextGameState gs = gs
