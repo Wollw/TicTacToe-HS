@@ -5,6 +5,9 @@ import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
 
+import Prelude hiding (succ)
+import qualified Prelude
+
 data GameState = InProgress { player :: Player
                             , board  :: Squares
                             }
@@ -12,16 +15,19 @@ data GameState = InProgress { player :: Player
                | Draw
                deriving (Show)
 
-data Player = X | O deriving (Show, Eq)
+data Player = X | O deriving (Show, Eq, Enum)
 
-instance Enum Player where
-    succ O   = X
-    succ X   = O
-    toEnum   = toEnum
-    fromEnum = fromEnum
+-- | Replacement for default Enum's succ
+--   allowing for Player values to wrap.
+succ :: Player -> Player
+succ O = X
+succ p = Prelude.succ p
 
+-- | The representation of the squares of the TicTacToe board.
 type Squares = Array Position Square
+
 type Square = Maybe Player
+
 type Position = (Integer, Integer)
 
 -- | A blank game state representing the initial
