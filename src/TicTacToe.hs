@@ -6,9 +6,6 @@ import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
 import Data.Tuple (swap)
 
-import Prelude hiding (succ)
-import qualified Prelude
-
 data GameState = InProgress { player :: Player
                             , board  :: Board
                             }
@@ -20,9 +17,9 @@ data Player = X | O deriving (Show, Eq, Enum)
 
 -- | Replacement for default Enum's succ
 --   allowing for Player values to wrap.
-succ :: Player -> Player
-succ O = X
-succ p = Prelude.succ p
+succWrap :: Player -> Player
+succWrap O = X
+succWrap p = Prelude.succ p
 
 -- | The representation of the squares of the TicTacToe board.
 type Board = Array Position Square
@@ -58,7 +55,7 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 --   should be.
 nextGameState :: GameState -> GameState
 nextGameState gs@(InProgress player board) = case nextGameState' board of
-    gs@(InProgress player board) -> gs { player = succ player }
+    gs@(InProgress player board) -> gs { player = succWrap player }
     gs -> gs
   where
     nextGameState' b = case find full $ rows board of
