@@ -19,7 +19,7 @@ data Player = X | O deriving (Show, Eq, Enum)
 --   allowing for Player values to wrap.
 succWrap :: Player -> Player
 succWrap O = X
-succWrap p = Prelude.succ p
+succWrap p = succ p
 
 -- | The representation of the squares of the TicTacToe board.
 type Board = Array Position Square
