@@ -1,24 +1,24 @@
 {-# LANGUAGE Safe #-}
 module Main where
 
-import safe Control.Monad (forever)
+import Control.Monad (forever)
 
-import safe Data.Array (elems)
-import safe Data.List (intersperse)
-import safe Data.List.Split (chunksOf)
-import safe Data.Tuple (swap)
+import Data.Array (elems)
+import Data.List (intersperse)
+import Data.List.Split (chunksOf)
+import Data.Tuple (swap)
 
-import safe System.Exit (exitSuccess)
+import System.Exit (exitSuccess)
 
-import safe Text.Read (readMaybe)
+import Text.Read (readMaybe)
 
-import safe Game.TicTacToe ( GameState(..)
-                           , Position
-                           , Board
-                           , Square
-                           , newGame
-                           , (/?/)
-                           , nextGameState)
+import Game.TicTacToe ( GameState(..)
+                      , Position
+                      , Board
+                      , Square
+                      , newGame
+                      , (/?/)
+                      , nextGameState)
 
 data Command = Invalid
              | Quit

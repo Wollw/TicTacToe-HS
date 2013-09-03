@@ -3,10 +3,10 @@
 --   a game of TicTacToe.
 module Game.TicTacToe where
 
-import safe Data.Array (Array, listArray, (//), elems, (!), indices)
-import safe Data.List (transpose, find)
-import safe Data.List.Split (chunksOf)
-import safe Data.Maybe (isJust, fromJust)
+import Data.Array (Array, listArray, (//), elems, (!), indices)
+import Data.List (transpose, find)
+import Data.List.Split (chunksOf)
+import Data.Maybe (isJust, fromJust)
 
 -- | Representation of the current state of the game.
 data GameState = InProgress { player :: Player
