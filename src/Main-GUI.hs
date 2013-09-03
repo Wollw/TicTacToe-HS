@@ -1,17 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
-import Data.IORef
-import Data.Array
+import Data.IORef (readIORef, writeIORef, newIORef)
+import Data.Array (assocs)
 
 import Graphics.UI.FreeGame
-
-import Language.Haskell.TH
 
 import TicTacToe ( GameState(..)
                  , Position
                  , Player (..)
-                 , Square(..)
                  , newGame
                  , nextGameState
                  , (/?/)
@@ -22,20 +19,12 @@ width, height :: Num a => a
 width  = 512
 height = 512
 
-loadBitmaps "../res/img/"
-
 gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
---imageMap = map (\(key, val) -> (key, loadBitmapResource val))
---    [ ( "X",          "playerx.png"    )
---    , ( "O",          "playero.png"    )
---    , ( "Background", "background.png" )
---    , ( "Border",     "border.png"     )
---    ]
 
-    
+loadBitmaps "../res/img/"
 
 main = runGame gameConfiguration $ do
     mouseDownRef  <- newIORef' False
@@ -55,10 +44,8 @@ main = runGame gameConfiguration $ do
                 mouseDownNow  <- mouseButtonL
                 when (inProgress gs && not mouseDownPrev && mouseDownNow) $ do
                     clickPosition <- mousePosition
-                    case gs /?/ (positionToCoordinate clickPosition) of
-                        Just gs' -> do
-                            writeIORef' gameStateRef $ nextGameState gs'
-                            print' $ gs'
+                    case gs /?/ positionToCoordinate clickPosition of
+                        Just gs' -> writeIORef' gameStateRef $ nextGameState gs'
                         Nothing  -> return ()
                 writeIORef' mouseDownRef mouseDownNow
                 
@@ -66,8 +53,10 @@ main = runGame gameConfiguration $ do
                 translate center $ fromBitmap _border_png
                 sequence_ [ drawSquare (coordinateToPosition coord) square
                           | (coord, square) <- assocs board ]
-            Draw  -> gameOver "Draw!" font
-            Won p -> gameOver ("Player "++show p++"  won!") font
+            gs  -> do
+                gameOver gs font
+                restartPressed <- keyChar 'R' 
+                when restartPressed $ writeIORef' gameStateRef newGame
 
         -- Quit if 'q' is pressed
         quitPressed <- keyChar 'Q'
@@ -80,10 +69,13 @@ main = runGame gameConfiguration $ do
         Nothing  -> return ()
         Just X -> translate pos $ fromBitmap _playerx_png
         Just O -> translate pos $ fromBitmap _playero_png
-    gameOver msg font = do
-        translate center $ colored black
+    gameOver gs font = translate center
+                         $ colored black
                          $ text font 17
-                         $ msg ++ "\nPress 'q' to quit."
+                         $ message gs ++ "\nPress 'q' to quit"
+                                      ++ "\nor 'r' to restart."
+    message Draw    = "Draw!"
+    message (Won p) = "Player "++show p++" wins!"
 
 positionToCoordinate :: V2 Float -> Position
 positionToCoordinate (V2 x y) = ( ceiling $ x / (width  / 3)
@@ -92,9 +84,6 @@ positionToCoordinate (V2 x y) = ( ceiling $ x / (width  / 3)
 coordinateToPosition :: Position -> V2 Float
 coordinateToPosition (x, y) = V2 ( (width  / 2) + (fromIntegral x - 2) * (width  / 3))
                                  ( (height / 2) + (fromIntegral y - 2) * (height / 3))
-
-print' :: Show a => a -> Game ()
-print' = embedIO . print
 
 newIORef'           = embedIO . newIORef
 readIORef'          = embedIO . readIORef
