@@ -63,8 +63,8 @@ getCommand = do
             _   -> Invalid
 
 printGameState :: GameState -> String
-printGameState (InProgress player board) = "Player: " ++ show player ++ "\n"
-                                        ++ " Board:\n" ++ printBoard board
+printGameState (InProgress player' board') = "Player: " ++ show player' ++ "\n"
+                                          ++ " Board:\n" ++ printBoard board'
 printGameState Draw    = "The game ended in a draw."
 printGameState (Won p) = "The game was won by player " ++ show p ++ "."
 
@@ -74,4 +74,4 @@ printBoard b = unlines . intersperse "-----" $ map (intersperse '|') rows
 
 printSquare :: Square -> String
 printSquare Nothing        = " "
-printSquare (Just player)  = show player
+printSquare (Just player') = show player'

@@ -7,6 +7,7 @@ import Data.Array (assocs)
 import Graphics.UI.FreeGame
 
 import Game.TicTacToe ( GameState(..)
+                      , Square
                       , Position
                       , Player (..)
                       , newGame
@@ -15,15 +16,22 @@ import Game.TicTacToe ( GameState(..)
                       , inProgress
                       )
 
+-- | The width and height of the screen.
 width, height :: Num a => a
 width  = 512
 height = 512
 
+-- | The center coordinate for the screen in pixels.
+center :: V2 Float
+center = V2 (width / 2) (height / 2)
+
+-- | Configuration settings for free-game.
 gameConfiguration :: GUIParam
 gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
+-- | Load image resources.
 loadBitmaps "../res/img/"
 
 main :: IO (Maybe a)
@@ -39,44 +47,69 @@ main = runGame gameConfiguration $ do
         -- Game Logic
         gameState <- readIORef' gameStateRef
         if inProgress gameState
-          then do
-                -- Handle new mouse input
-                mouseDownPrev <- readIORef' mouseDownRef
-                mouseDownNow  <- mouseButtonL
-                when (not mouseDownPrev && mouseDownNow) $ do
-                    clickLocation <- mousePosition
-                    case gameState /?/ coordinateToPosition clickLocation of
-                        Just gs' -> writeIORef' gameStateRef $ nextGameState gs'
-                        Nothing  -> return ()
-                writeIORef' mouseDownRef mouseDownNow
-                
-                -- Draw the game
-                translate center $ fromBitmap _border_png
-                sequence_ [ drawSquare (positionToCoordinate coord) square
-                          | (coord, square) <- assocs . board $ gameState]
-          else do gameOver gameState font
-                  restartPressed <- keyChar 'R' 
-                  when restartPressed $ writeIORef' gameStateRef newGame
+          then do --
+                  -- Main logic for the game.
+                  --
+                  -- Here we check for new mouse clicks and
+                  -- if the location is empty fill it with
+                  -- the current player's piece.
+                  --
+                  mouseDownPrev <- readIORef' mouseDownRef
+                  mouseDownNow  <- mouseButtonL
+                  when (not mouseDownPrev && mouseDownNow) $ do
+                      clickLocation <- mousePosition
+                      case gameState /?/ coordinateToPosition clickLocation of
+                          Just gs' -> writeIORef' gameStateRef $ nextGameState gs'
+                          Nothing  -> return ()
+                  writeIORef' mouseDownRef mouseDownNow
+                  
+                  -- Draw the board grid and pieces to the screen.
+                  translate center $ fromBitmap _border_png
+                  sequence_ [ drawSquare coord square
+                            | (coord, square) <- assocs . board $ gameState]
+          else do --
+                  -- Game over logic.
+                  --
+                  -- Here we display the way in which the
+                  -- game ended (a draw or a win).  We also
+                  -- check for the restart command and restart
+                  -- the game if it is given.
+                  --
+                  gameOver gameState font
+                  'R' `isPressedThen` writeIORef' gameStateRef newGame
 
-        -- Quit if 'q' is pressed
-        quitPressed <- keyChar 'Q'
-        when quitPressed quit
+        -- The quit command 'q' can be given at
+        -- any to time to quit the game.
+        'Q' `isPressedThen` quit
 
         tick
-  where
-    center = V2 (width / 2) (height / 2)
-    drawSquare pos square = case square of
-        Nothing  -> return ()
-        Just X -> translate pos $ fromBitmap _playerx_png
-        Just O -> translate pos $ fromBitmap _playero_png
-    gameOver gs font = translate center
-                         $ colored black
-                         $ text font 17
-                         $ message gs ++ "\nPress 'q' to quit"
-                                      ++ "\nor 'r' to restart."
-    message Draw    = "Draw!"
-    message (Won p) = "Player "++show p++" wins!"
-    message _       = "" -- Shouldn't get here
+
+-- | Evaluate a Game action if a character is pressed.
+isPressedThen :: Char -> Game () -> Game ()
+c `isPressedThen` f = keyChar c >>= flip when f
+
+-- | Given a pixel location and a TicTacToe Square
+--   draws the appropriate image to that location
+drawSquare :: Position -> Square -> Game ()
+drawSquare pos square = case square of
+    Nothing  -> return ()
+    Just X -> translate (positionToCoordinate pos) $ fromBitmap _playerx_png
+    Just O -> translate (positionToCoordinate pos) $ fromBitmap _playero_png
+
+
+-- | Displays the game over text and commands reminders.
+gameOver :: GameState -> Font -> Game ()
+gameOver gs font = translate center
+                     $ colored black
+                     $ text font 17
+                     $ gameStatusString gs ++ "\nPress 'q' to quit"
+                                           ++ "\nor 'r' to restart."
+
+-- | Generates a string explaining the current game status.
+gameStatusString :: GameState -> String
+gameStatusString Draw             = "Draw!"
+gameStatusString (Won p)          = "Player "++show p++" wins!"
+gameStatusString (InProgress _ _) = "Game in progress."
 
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
