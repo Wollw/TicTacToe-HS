@@ -42,6 +42,10 @@ main = runGame gameConfiguration $ do
     gameStateRef  <- newIORef' newGame
     font <- loadFont "res/font/VL-PGothic-Regular.ttf"
     forever $ do
+        
+        -- Draw the background
+        translate center $ fromBitmap _background_png
+
         -- Game Logic
         gameState <- readIORef' gameStateRef
         case gameState of
@@ -59,7 +63,6 @@ main = runGame gameConfiguration $ do
                 writeIORef' mouseDownRef mouseDownNow
                 
                 -- Draw the game
-                translate center $ fromBitmap _background_png
                 translate center $ fromBitmap _border_png
                 sequence_ [ drawSquare (coordinateToPosition coord) square
                           | (coord, square) <- assocs board ]
