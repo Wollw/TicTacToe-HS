@@ -107,8 +107,10 @@ gameOver :: GameState -> Font -> Game ()
 gameOver gs font = translate center
                      $ colored black
                      $ text font 17
-                     $ gameStatusString gs ++ "\nPress 'q' to quit"
-                                           ++ "\nor 'r' to restart."
+                     $ unlines [ gameStatusString gs
+                               , "Press 'q' to quit"
+                               , "or 'r' to restart."
+                               ]
 
 -- | Generates a string explaining the current game status.
 gameStatusString :: GameState -> String
