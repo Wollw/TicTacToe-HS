@@ -44,11 +44,16 @@ main = runGame gameConfiguration $ do
         -- Draw the background
         translate center $ fromBitmap _background_png
 
-        -- Game Logic
+        --
+        -- Two paths based on game state.
+        -- We run the normal game logic if the game is still
+        -- in progress.  We display the game over screen if
+        -- the game has ended.
+        --
         gameState <- readIORef' gameStateRef
         if inProgress gameState
           then do --
-                  -- Main logic for the game.
+                  -- Game play logic.
                   --
                   -- Here we check for new mouse clicks and
                   -- if the location is empty fill it with
