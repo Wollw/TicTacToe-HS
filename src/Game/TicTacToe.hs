@@ -50,10 +50,10 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 (/?/) :: GameState -> Position -> Maybe GameState
 gs@(InProgress p b) /?/ position =
     if validIndex position
-    then case b ! position of
+      then case b ! position of
                 Nothing -> Just $ gs { board = b // [(position, Just p)] }
                 _       -> Nothing
-    else Nothing
+      else Nothing
   where
     validIndex pos = elem pos . indices $ b
 _ /?/ _ = Nothing
@@ -62,7 +62,7 @@ _ /?/ _ = Nothing
 --   should be.
 nextGameState :: GameState -> GameState
 nextGameState gameState = case nextGameState' gameState of
-    gs@(InProgress player' _) -> gs { player = succWrap player' }
+    gs@(InProgress p _) -> gs { player = succWrap p }
     gs -> gs
   where
     nextGameState' gs = case find full $ rows . board $ gs of
