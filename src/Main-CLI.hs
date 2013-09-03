@@ -1,14 +1,13 @@
 module Main where
 
-import Control.Monad (forever, when)
+import Control.Monad (forever)
 
 import Data.Array (elems)
-import Data.List (concatMap, intercalate, intersperse)
+import Data.List (intersperse)
 import Data.List.Split (chunksOf)
-import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 
-import System.Exit (exitWith, exitSuccess)
+import System.Exit (exitSuccess)
 
 import Text.Read (readMaybe)
 
@@ -63,8 +62,9 @@ getCommand = do
             _   -> Invalid
 
 printGameState :: GameState -> String
-printGameState (InProgress player' board') = "Player: " ++ show player' ++ "\n"
-                                          ++ " Board:\n" ++ printBoard board'
+printGameState (InProgress p b) = unlines [ "Player: " ++ show p
+                                          , " Board:", printBoard b
+                                          ]
 printGameState Draw    = "The game ended in a draw."
 printGameState (Won p) = "The game was won by player " ++ show p ++ "."
 
@@ -74,4 +74,4 @@ printBoard b = unlines . intersperse "-----" $ map (intersperse '|') rows
 
 printSquare :: Square -> String
 printSquare Nothing        = " "
-printSquare (Just player') = show player'
+printSquare (Just p) = show p
