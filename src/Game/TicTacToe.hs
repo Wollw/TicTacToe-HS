@@ -78,7 +78,7 @@ nextGameState gameState = case nextGameState' gameState of
         diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
                        , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
 
--- | Determines if the game is current in progress or not.
+-- | Determines if the game is currently in progress or not.
 inProgress :: GameState -> Bool
 inProgress (InProgress _ _) = True
 inProgress _ = False
