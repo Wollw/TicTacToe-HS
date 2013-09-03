@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
-import Data.IORef (readIORef, writeIORef, newIORef)
+import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 import Data.Array (assocs)
 
 import Graphics.UI.FreeGame
@@ -19,6 +19,7 @@ width, height :: Num a => a
 width  = 512
 height = 512
 
+gameConfiguration :: GUIParam
 gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
@@ -26,6 +27,7 @@ gameConfiguration = def { _windowSize  = V2 width height
 
 loadBitmaps "../res/img/"
 
+main :: IO (Maybe a)
 main = runGame gameConfiguration $ do
     mouseDownRef  <- newIORef' False
     gameStateRef  <- newIORef' newGame
@@ -37,14 +39,14 @@ main = runGame gameConfiguration $ do
 
         -- Game Logic
         gameState <- readIORef' gameStateRef
-        case gameState of
-            gs@(InProgress player board) -> do
+        if inProgress gameState
+          then do
                 -- Handle new mouse input
                 mouseDownPrev <- readIORef' mouseDownRef
                 mouseDownNow  <- mouseButtonL
-                when (inProgress gs && not mouseDownPrev && mouseDownNow) $ do
+                when (not mouseDownPrev && mouseDownNow) $ do
                     clickPosition <- mousePosition
-                    case gs /?/ positionToCoordinate clickPosition of
+                    case gameState /?/ positionToCoordinate clickPosition of
                         Just gs' -> writeIORef' gameStateRef $ nextGameState gs'
                         Nothing  -> return ()
                 writeIORef' mouseDownRef mouseDownNow
@@ -52,11 +54,10 @@ main = runGame gameConfiguration $ do
                 -- Draw the game
                 translate center $ fromBitmap _border_png
                 sequence_ [ drawSquare (coordinateToPosition coord) square
-                          | (coord, square) <- assocs board ]
-            gs  -> do
-                gameOver gs font
-                restartPressed <- keyChar 'R' 
-                when restartPressed $ writeIORef' gameStateRef newGame
+                          | (coord, square) <- assocs . board $ gameState]
+          else do gameOver gameState font
+                  restartPressed <- keyChar 'R' 
+                  when restartPressed $ writeIORef' gameStateRef newGame
 
         -- Quit if 'q' is pressed
         quitPressed <- keyChar 'Q'
@@ -76,6 +77,7 @@ main = runGame gameConfiguration $ do
                                       ++ "\nor 'r' to restart."
     message Draw    = "Draw!"
     message (Won p) = "Player "++show p++" wins!"
+    message _       = "" -- Shouldn't get here
 
 positionToCoordinate :: V2 Float -> Position
 positionToCoordinate (V2 x y) = ( ceiling $ x / (width  / 3)
@@ -85,6 +87,11 @@ coordinateToPosition :: Position -> V2 Float
 coordinateToPosition (x, y) = V2 ( (width  / 2) + (fromIntegral x - 2) * (width  / 3))
                                  ( (height / 2) + (fromIntegral y - 2) * (height / 3))
 
-newIORef'           = embedIO . newIORef
-readIORef'          = embedIO . readIORef
-writeIORef' ref     = embedIO . writeIORef ref
+newIORef' :: a -> Game (IORef a)
+newIORef' = embedIO . newIORef
+
+readIORef' :: IORef a -> Game a
+readIORef' = embedIO . readIORef
+
+writeIORef' :: IORef a -> a -> Game ()
+writeIORef' ref = embedIO . writeIORef ref

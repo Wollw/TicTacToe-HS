@@ -6,6 +6,7 @@ import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
 import Data.Tuple (swap)
 
+-- | Representation of the current state of the game.
 data GameState = InProgress { player :: Player
                             , board  :: Board
                             }
@@ -13,6 +14,7 @@ data GameState = InProgress { player :: Player
                | Draw
                deriving (Show)
 
+-- | Representation of each player in the game.
 data Player = X | O deriving (Show, Eq, Enum)
 
 -- | Replacement for default Enum's succ
@@ -24,8 +26,12 @@ succWrap p = succ p
 -- | The representation of the squares of the TicTacToe board.
 type Board = Array Position Square
 
+-- | Representation of a square of the board.
+--   A square either has Nothing on it or single
+--   player's piece.
 type Square = Maybe Player
 
+-- | Coordinate type for board positions.
 type Position = (Int, Int)
 
 -- | A blank game state representing the initial
@@ -71,6 +77,7 @@ nextGameState gs@(InProgress player board) = case nextGameState' board of
                        , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
 nextGameState gs = gs
 
+-- | Determines if the game is current in progress or not.
 inProgress :: GameState -> Bool
 inProgress (InProgress _ _) = True
 inProgress _ = False
