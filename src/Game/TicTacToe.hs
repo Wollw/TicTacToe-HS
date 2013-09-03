@@ -1,10 +1,11 @@
-module TicTacToe where
+-- | This module contains functions and data used for building
+--   a game of TicTacToe.
+module Game.TicTacToe where
 
-import Data.Array (Array, bounds, listArray, (//), elems, (!), ixmap, indices)
+import Data.Array (Array, listArray, (//), elems, (!), indices)
 import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
-import Data.Tuple (swap)
 
 -- | Representation of the current state of the game.
 data GameState = InProgress { player :: Player
@@ -55,27 +56,27 @@ gs@(InProgress p b) /?/ position =
     else Nothing
   where
     validIndex pos = elem pos . indices $ b
-gs /?/ _ = Nothing
+_ /?/ _ = Nothing
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be.
 nextGameState :: GameState -> GameState
-nextGameState gs@(InProgress player board) = case nextGameState' board of
-    gs@(InProgress player board) -> gs { player = succWrap player }
+nextGameState gameState = case nextGameState' gameState of
+    gs@(InProgress player' _) -> gs { player = succWrap player' }
     gs -> gs
   where
-    nextGameState' b = case find full $ rows board of
+    nextGameState' gs = case find full $ rows . board $ gs of
         Just xs -> Won . fromJust . head $ xs
-        Nothing -> if notElem Nothing . elems $ board
+        Nothing -> if notElem Nothing . elems $ board gs
                    then Draw
-                   else gs
+                   else gameState
       where
         full [x,y,z] = x == y && y == z && isJust x
+        full _       = False -- Fail if not three values
         toLists      = chunksOf 3 . elems
         rows b       = toLists b ++ (transpose . toLists) b ++ diagonals b
         diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
                        , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
-nextGameState gs = gs
 
 -- | Determines if the game is current in progress or not.
 inProgress :: GameState -> Bool

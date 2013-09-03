@@ -12,13 +12,13 @@ import System.Exit (exitWith, exitSuccess)
 
 import Text.Read (readMaybe)
 
-import TicTacToe ( GameState(..)
-                 , Position
-                 , Board
-                 , Square
-                 , newGame
-                 , (/?/)
-                 , nextGameState)
+import Game.TicTacToe ( GameState(..)
+                      , Position
+                      , Board
+                      , Square
+                      , newGame
+                      , (/?/)
+                      , nextGameState)
 
 data Command = Invalid
              | Quit

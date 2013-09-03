@@ -6,14 +6,14 @@ import Data.Array (assocs)
 
 import Graphics.UI.FreeGame
 
-import TicTacToe ( GameState(..)
-                 , Position
-                 , Player (..)
-                 , newGame
-                 , nextGameState
-                 , (/?/)
-                 , inProgress
-                 )
+import Game.TicTacToe ( GameState(..)
+                      , Position
+                      , Player (..)
+                      , newGame
+                      , nextGameState
+                      , (/?/)
+                      , inProgress
+                      )
 
 width, height :: Num a => a
 width  = 512
@@ -23,7 +23,6 @@ gameConfiguration :: GUIParam
 gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
-
 
 loadBitmaps "../res/img/"
 
@@ -45,15 +44,15 @@ main = runGame gameConfiguration $ do
                 mouseDownPrev <- readIORef' mouseDownRef
                 mouseDownNow  <- mouseButtonL
                 when (not mouseDownPrev && mouseDownNow) $ do
-                    clickPosition <- mousePosition
-                    case gameState /?/ positionToCoordinate clickPosition of
+                    clickLocation <- mousePosition
+                    case gameState /?/ coordinateToPosition clickLocation of
                         Just gs' -> writeIORef' gameStateRef $ nextGameState gs'
                         Nothing  -> return ()
                 writeIORef' mouseDownRef mouseDownNow
                 
                 -- Draw the game
                 translate center $ fromBitmap _border_png
-                sequence_ [ drawSquare (coordinateToPosition coord) square
+                sequence_ [ drawSquare (positionToCoordinate coord) square
                           | (coord, square) <- assocs . board $ gameState]
           else do gameOver gameState font
                   restartPressed <- keyChar 'R' 
@@ -79,19 +78,24 @@ main = runGame gameConfiguration $ do
     message (Won p) = "Player "++show p++" wins!"
     message _       = "" -- Shouldn't get here
 
-positionToCoordinate :: V2 Float -> Position
-positionToCoordinate (V2 x y) = ( ceiling $ x / (width  / 3)
+-- | Converts a pixel location to a Square's position.
+coordinateToPosition :: V2 Float -> Position
+coordinateToPosition (V2 x y) = ( ceiling $ x / (width  / 3)
                                 , ceiling $ y / (height / 3) )
 
-coordinateToPosition :: Position -> V2 Float
-coordinateToPosition (x, y) = V2 ( (width  / 2) + (fromIntegral x - 2) * (width  / 3))
+-- | Converts a Square's position to a pixel location to draw a sprite.
+positionToCoordinate :: Position -> V2 Float
+positionToCoordinate (x, y) = V2 ( (width  / 2) + (fromIntegral x - 2) * (width  / 3))
                                  ( (height / 2) + (fromIntegral y - 2) * (height / 3))
 
+-- | newIORef lifted to the Game monad
 newIORef' :: a -> Game (IORef a)
 newIORef' = embedIO . newIORef
 
+-- | readIORef lifted to the Game monad
 readIORef' :: IORef a -> Game a
 readIORef' = embedIO . readIORef
 
+-- | writeIORef lifted to the Game monad
 writeIORef' :: IORef a -> a -> Game ()
 writeIORef' ref = embedIO . writeIORef ref
