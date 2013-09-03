@@ -13,7 +13,7 @@ data GameState = InProgress { player :: Player
                             }
                | Won Player
                | Draw
-               deriving (Show)
+               deriving Show
 
 -- | Representation of each player in the game.
 data Player = X | O deriving (Show, Eq, Enum)

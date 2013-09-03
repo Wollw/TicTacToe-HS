@@ -21,7 +21,7 @@ import Game.TicTacToe ( GameState(..)
 
 data Command = Invalid
              | Quit
-             | Place Position deriving Show
+             | Place Position
 
 main :: IO ()
 main = forever $ do

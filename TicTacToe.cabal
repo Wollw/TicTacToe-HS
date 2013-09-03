@@ -20,7 +20,7 @@ executable TicTacToe
   ghc-options:         -O2 -Wall
   -- other-modules:       
   build-depends:       base == 4.6.*, array, split
-                     , template-haskell, filepath
+                     , template-haskell
                      , free-game == 0.9.3.*
 
 executable TicTacToe-CLI
