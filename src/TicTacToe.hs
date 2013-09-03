@@ -1,6 +1,6 @@
 module TicTacToe where
 
-import Data.Array (Array, bounds, listArray, (//), elems, (!), ixmap)
+import Data.Array (Array, bounds, listArray, (//), elems, (!), ixmap, indices)
 import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust)
@@ -26,7 +26,7 @@ type Board = Array Position Square
 
 type Square = Maybe Player
 
-type Position = (Integer, Integer)
+type Position = (Int, Int)
 
 -- | A blank game state representing the initial
 --   state of a game of TicTacToe.
@@ -48,7 +48,7 @@ gs@(InProgress p b) /?/ position =
                 _       -> Nothing
     else Nothing
   where
-    validIndex (x,y) = x >= 1 && y >= 1 && x <= 3 && y <= 3
+    validIndex pos = elem pos . indices $ b
 gs /?/ _ = Nothing
 
 -- | Evaluates a GameState to determine what the next game state
@@ -70,3 +70,7 @@ nextGameState gs@(InProgress player board) = case nextGameState' board of
         diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
                        , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
 nextGameState gs = gs
+
+inProgress :: GameState -> Bool
+inProgress (InProgress _ _) = True
+inProgress _ = False

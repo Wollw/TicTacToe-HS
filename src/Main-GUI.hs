@@ -1,88 +1,98 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Main where
 
-import Control.Monad (forM_)
-import qualified Graphics.UI.GLUT as GLUT (windowSize, get, Size(..))
-import Graphics.UI.Fungen
-import Graphics.Rendering.OpenGL (GLdouble, GLsizei)
-import TicTacToe hiding (Position)
+import Data.IORef
+import Data.Array
 
-data PlaceEvent = PlaceEvent { player :: Player, position :: (Int, Int) }
-    deriving Show
-data GameAttribute = GameAttr GameState [PlaceEvent]
+import Graphics.UI.FreeGame
 
-newGameState :: GameAttribute
-newGameState = GameAttr newGame []
+import Language.Haskell.TH
 
-type TicTacToeObject = GameObject ()
-type TicTacToeAction a = IOGame GameAttribute () () () a
+import TicTacToe ( GameState(..)
+                 , Position
+                 , Player (..)
+                 , Square(..)
+                 , newGame
+                 , nextGameState
+                 , (/?/)
+                 , inProgress
+                 )
 
-width = 256
-height = 256
-w = fromIntegral width  :: GLdouble
-h = fromIntegral height :: GLdouble
+width, height :: Num a => a
+width  = 512
+height = 512
 
-magenta = Just [(255, 0, 255)]
+loadBitmaps "../res/img/"
 
-main :: IO ()
-main = let winConfig = ((100,100), (width, height), "TicTacToe")
-           bmpList   = [ ("res/border.bmp",  Nothing)
-                       , ("res/playerX.bmp", magenta)
-                       , ("res/playerO.bmp", magenta)
-                       ]
-           squares   = [ createSquare x y | x <- [0..2], y <- [0..2] ]
-           objects   = [ objectGroup "squareGroup" squares ]
-           gameMap   = textureMap 0 (w/3) (h/3) w h
-           bindings  = [ (Char 'q', Press, \_ _ -> funExit)
-                       , (MouseButton LeftButton, Press, onLeftMouseButtonPressed)
-                       ]
-       in do
-        funInit winConfig gameMap objects () newGameState bindings gameCycle Idle bmpList
+gameConfiguration = def { _windowSize  = V2 width height
+                        , _windowTitle = "TicTacToe"
+                        }
 
-createSquare :: (Show a, Integral a) => a -> a -> GameObject ()
-createSquare x y = let squarePic = Tex (w/3, h/3) 0
-                       squarePos = (   w/6 + (fromIntegral x * w/3)
-                                   , 5*h/6 - (fromIntegral y * h/3))
-                   in object ("square" ++ show x ++ show y) squarePic False squarePos (0,0) ()
+--imageMap = map (\(key, val) -> (key, loadBitmapResource val))
+--    [ ( "X",          "playerx.png"    )
+--    , ( "O",          "playero.png"    )
+--    , ( "Background", "background.png" )
+--    , ( "Border",     "border.png"     )
+--    ]
 
-onLeftMouseButtonPressed :: Modifiers -> Position -> TicTacToeAction ()
-onLeftMouseButtonPressed mods pos@(Position x y) = do
-    (GameAttr gs eventList) <- getGameAttribute
-    size <- getWindowSize
-    liftIOtoIOGame $ putStrLn "click"
-    setGameAttribute
-        $ GameAttr gs $ eventList ++
-        [PlaceEvent (TicTacToe.player gs) (squareCoord size (x,y))]
-squareCoord (w,h) (x,y) = ( truncate $ fromIntegral x / (fromIntegral w / 3)
-                          , truncate $ fromIntegral y / (fromIntegral h / 3)
-                          )
-squareName s p = "square" ++ showCoord (squareCoord s p)
-showCoord (x,y) = show x ++ show y
+    
 
--- Submit as patch?
-getWindowSize :: IOGame t s u v (GLsizei,GLsizei)
-getWindowSize = do 
-    (GLUT.Size w h) <- liftIOtoIOGame . GLUT.get $ GLUT.windowSize
-    return (w,h)
+main = runGame gameConfiguration $ do
+    mouseDownRef  <- newIORef' False
+    gameStateRef  <- newIORef' newGame
+    font <- loadFont "res/font/VL-PGothic-Regular.ttf"
+    forever $ do
+        -- Game Logic
+        gameState <- readIORef' gameStateRef
+        case gameState of
+            gs@(InProgress player board) -> do
+                -- Handle new mouse input
+                mouseDownPrev <- readIORef' mouseDownRef
+                mouseDownNow  <- mouseButtonL
+                when (inProgress gs && not mouseDownPrev && mouseDownNow) $ do
+                    clickPosition <- mousePosition
+                    case gs /?/ (positionToCoordinate clickPosition) of
+                        Just gs' -> do
+                            writeIORef' gameStateRef $ nextGameState gs'
+                            print' $ gs'
+                        Nothing  -> return ()
+                writeIORef' mouseDownRef mouseDownNow
+                
+                -- Draw the game
+                translate center $ fromBitmap _background_png
+                translate center $ fromBitmap _border_png
+                sequence_ [ drawSquare (coordinateToPosition coord) square
+                          | (coord, square) <- assocs board ]
+            Draw  -> gameOver "Draw!" font
+            Won p -> gameOver ("Player "++show p++"  won!") font
 
-gameCycle :: TicTacToeAction ()
-gameCycle = do
-    (GameAttr gs eventList) <- getGameAttribute
-    case gs of
-        Won p      -> gameOver gs $ "Player " ++ show p ++ " wins!"
-        Draw       -> gameOver gs "Draw!"
-        InProgress _ board -> case eventList of
-            [] -> return ()
-            (PlaceEvent player (x,y)):es -> do
-                size <- getWindowSize
-                obj <- findObject (squareName size (x,y)) "squareGroup"
-                case board /?/ (squareCoord size (x,y)) $ player of
-                    Just board' -> do setGameAttribute $ GameAttr (nextGameState gs {board = board'}) (tail eventList)
-                                      setObjectCurrentPicture (fromEnum player + 1) obj
-                    Nothing -> return ()
-            
+        -- Quit if 'q' is pressed
+        quitPressed <- keyChar 'Q'
+        when quitPressed quit
+
+        tick
   where
-    gameOver gs str = printOnScreen str Fixed8By13 (w/2, h/2) 0 0 0
---    clearSquares = let objNames = [ "square" ++ show x ++ show y | x <- [0..2], y <- [0..2] ]
---                   in forM_ objNames $ \name -> do
---                        obj <- findObject name "squareGroup"
---                        setObjectCurrentPicture 0 obj
+    center = V2 (width / 2) (height / 2)
+    drawSquare pos square = case square of
+        Nothing  -> return ()
+        Just X -> translate pos $ fromBitmap _playerx_png
+        Just O -> translate pos $ fromBitmap _playero_png
+    gameOver msg font = do
+        translate center $ colored black
+                         $ text font 17
+                         $ msg ++ "\nPress 'q' to quit."
+
+positionToCoordinate :: V2 Float -> Position
+positionToCoordinate (V2 x y) = ( ceiling $ x / (width  / 3)
+                                , ceiling $ y / (height / 3) )
+
+coordinateToPosition :: Position -> V2 Float
+coordinateToPosition (x, y) = V2 ( (width  / 2) + (fromIntegral x - 2) * (width  / 3))
+                                 ( (height / 2) + (fromIntegral y - 2) * (height / 3))
+
+print' :: Show a => a -> Game ()
+print' = embedIO . print
+
+newIORef'           = embedIO . newIORef
+readIORef'          = embedIO . readIORef
+writeIORef' ref     = embedIO . writeIORef ref

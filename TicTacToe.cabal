@@ -24,4 +24,6 @@ executable TicTacToe-GUI
   main-is:             Main-GUI.hs
   hs-source-dirs:      src
   -- other-modules:       
-  build-depends:       base ==4.6.*, array, split, free-game, data-lens, data-lens-template
+  build-depends: base == 4.6.*, array, split, containers
+               , template-haskell
+               , free-game == 0.9.3.*
