@@ -52,7 +52,7 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 gs /?/ pos
     | invalidPosition = Nothing
     | inProgress gs   = Just $
-        gs { board = board gs // [ ( pos, Just $ player gs )] }
+        gs { board = board gs // [(pos, Just $ player gs)] }
     | otherwise = Nothing -- Game over or other unhandled states.
   where
     invalidPosition = (notElem pos . indices $ board gs)
@@ -63,14 +63,15 @@ gs /?/ pos
 nextGameState :: GameState -> GameState
 nextGameState gameState = case maybeFullRows gameState of
     Just xs -> Won . fromJust . head $ xs
-    Nothing -> if notElem Nothing . elems $ board gameState
+    Nothing -> if boardFull gameState
                  then Draw
                  else gameState { player = succWrap . player $ gameState }
   where
+    boardFull     = notElem Nothing . elems . board
     maybeFullRows = find full . rows . board
+    toLists       = chunksOf 3 . elems
     full [x,y,z]  = x == y && y == z && isJust x
     full _        = False -- Fail if not three values
-    toLists       = chunksOf 3 . elems
     rows b        = toLists b ++ (transpose . toLists) b ++ diagonals b
     diagonals b   = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
                     , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
