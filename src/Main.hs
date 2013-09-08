@@ -50,7 +50,8 @@ main = runGame gameConfiguration $ do
         -- in progress.  We display the game over screen if
         -- the game has ended.
         --
-        readIORef' gameStateRef >>= \gameState -> if inProgress gameState
+        gameState <- readIORef' gameStateRef
+        if inProgress gameState
           then do --
                   -- Game play logic.
                   --
@@ -80,17 +81,17 @@ main = runGame gameConfiguration $ do
                   -- the game if it is given.
                   --
                   gameOver gameState font
-                  'R' `isPressedThen` writeIORef' gameStateRef newGame
+                  'R' `whenPressed` writeIORef' gameStateRef newGame
 
         -- The quit command 'q' can be given at
         -- any to time to quit the game.
-        'Q' `isPressedThen` quit
+        'Q' `whenPressed` quit
 
         tick
 
 -- | Evaluate a Game action if a character is pressed.
-isPressedThen :: Char -> Game () -> Game ()
-c `isPressedThen` f = keyChar c >>= flip when f
+whenPressed :: Char -> Game () -> Game ()
+c `whenPressed` f = keyChar c >>= flip when f
 
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
