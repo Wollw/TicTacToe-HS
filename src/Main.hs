@@ -1,12 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
-import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 import Data.Array (assocs)
-
-import System.FilePath ((</>))
-
-import Graphics.UI.FreeGame
+import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 
 import Game.TicTacToe ( GameState(..)
                       , Square
@@ -17,6 +13,10 @@ import Game.TicTacToe ( GameState(..)
                       , (/?/)
                       , inProgress
                       )
+
+import Graphics.UI.FreeGame
+
+import System.FilePath ((</>))
 
 -- | The width and height of the screen.
 width, height :: Num a => a
