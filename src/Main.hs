@@ -4,6 +4,8 @@ module Main where
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 import Data.Array (assocs)
 
+import System.FilePath ((</>))
+
 import Graphics.UI.FreeGame
 
 import Game.TicTacToe ( GameState(..)
@@ -31,18 +33,35 @@ gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
+fontPath :: FilePath
+fontPath = "res"</>"font"</>"VL-PGothic-Regular.ttf"
+
 -- | Load image resources.
 loadBitmaps "../res/img/"
 
+-- | Helper function for providing the player's piece image Bitmap.
+playerImage :: Player -> Bitmap
+playerImage X = _playerx_png
+playerImage O = _playero_png
+
+-- | The Bitmap used for the lines between squares of the board.
+borderImage :: Bitmap
+borderImage = _border_png
+
+-- | The Bitmap used for the background of the board.
+--   Displayed behind the squares.
+backgroundImage :: Bitmap
+backgroundImage = _background_png
+
 main :: IO (Maybe a)
 main = runGame gameConfiguration $ do
-    mouseDownRef  <- newIORef' False
-    gameStateRef  <- newIORef' newGame
-    font <- loadFont "res/font/VL-PGothic-Regular.ttf"
+    mouseDownRef <- newIORef' False
+    gameStateRef <- newIORef' newGame
+    font <- loadFont fontPath
     forever $ do
         
         -- Draw the background
-        translate center $ fromBitmap _background_png
+        translate center $ fromBitmap backgroundImage
 
         --
         -- Two paths based on game state.
@@ -69,7 +88,7 @@ main = runGame gameConfiguration $ do
                   writeIORef' mouseDownRef mouseDownNow
                   
                   -- Draw the board grid and pieces to the screen.
-                  translate center $ fromBitmap _border_png
+                  translate center $ fromBitmap borderImage
                   sequence_ [ drawSquare coord square
                             | (coord, square) <- assocs . board $ gameState]
           else do --
@@ -98,8 +117,8 @@ c `whenPressed` f = keyChar c >>= flip when f
 drawSquare :: Position -> Square -> Game ()
 drawSquare pos square = case square of
     Nothing  -> return ()
-    Just X -> translate (positionToCoordinate pos) $ fromBitmap _playerx_png
-    Just O -> translate (positionToCoordinate pos) $ fromBitmap _playero_png
+    Just p -> translate (positionToCoordinate pos)
+                . fromBitmap . playerImage $ p
 
 
 -- | Displays the game over text and commands reminders.
