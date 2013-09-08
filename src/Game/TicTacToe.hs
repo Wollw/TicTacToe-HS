@@ -50,12 +50,11 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 --   on the board.
 (/?/) :: GameState -> Position -> Maybe GameState
 gs /?/ pos
-    | inProgress gs && validPosition pos = Just $
+    | validPosition = Just $
         gs { board = board gs // [(pos, Just $ player gs)] }
     | otherwise = Nothing
   where
-    validPosition p = (elem p . indices $ board gs)
-                   || isJust (board gs ! p)
+    validPosition = and [inProgress gs, elem pos . indices $ board gs]
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be.
