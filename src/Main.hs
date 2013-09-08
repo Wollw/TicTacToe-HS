@@ -50,8 +50,7 @@ main = runGame gameConfiguration $ do
         -- in progress.  We display the game over screen if
         -- the game has ended.
         --
-        gameState <- readIORef' gameStateRef
-        if inProgress gameState
+        readIORef' gameStateRef >>= \gameState -> if inProgress gameState
           then do --
                   -- Game play logic.
                   --
