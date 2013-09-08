@@ -61,24 +61,20 @@ gs /?/ pos
 -- | Evaluates a GameState to determine what the next game state
 --   should be.
 nextGameState :: GameState -> GameState
-nextGameState gameState = case nextGameState' gameState of
-    gs@(InProgress p _) -> gs { player = succWrap p }
-    gs -> gs
+nextGameState gameState = case find full $ rows . board $ gameState of
+    Just xs -> Won . fromJust . head $ xs
+    Nothing -> if notElem Nothing . elems $ board gameState
+                 then Draw
+                 else gameState { player = succWrap . player $ gameState }
   where
-    nextGameState' gs = case find full $ rows . board $ gs of
-        Just xs -> Won . fromJust . head $ xs
-        Nothing -> if notElem Nothing . elems $ board gs
-                   then Draw
-                   else gameState
-      where
-        full [x,y,z] = x == y && y == z && isJust x
-        full _       = False -- Fail if not three values
-        toLists      = chunksOf 3 . elems
-        rows b       = toLists b ++ (transpose . toLists) b ++ diagonals b
-        diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
-                       , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
+    full [x,y,z] = x == y && y == z && isJust x
+    full _       = False -- Fail if not three values
+    toLists      = chunksOf 3 . elems
+    rows b       = toLists b ++ (transpose . toLists) b ++ diagonals b
+    diagonals b  = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
+                   , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
 
 -- | Determines if the game is currently in progress or not.
 inProgress :: GameState -> Bool
 inProgress (InProgress _ _) = True
-inProgress _ = False
+inProgress _                = False
