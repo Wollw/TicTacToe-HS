@@ -53,6 +53,8 @@ gs /?/ p
     | validPosition = Just $ gs { board = board gs // [(p, Just $ player gs)] }
     | otherwise = Nothing
   where
+    -- A valid position is both part of an in progress game and
+    -- within the bounds of the game board.
     validPosition = and [inProgress gs, elem p . indices $ board gs]
 
 -- | Evaluates a GameState to determine what the next game state
