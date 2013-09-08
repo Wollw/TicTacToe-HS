@@ -50,7 +50,7 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 --   on the board.
 (/?/) :: GameState -> Position -> Maybe GameState
 gs /?/ pos
-    | validPosition pos && inProgress gs = Just $
+    | inProgress gs && validPosition pos = Just $
         gs { board = board gs // [(pos, Just $ player gs)] }
     | otherwise = Nothing
   where
