@@ -49,12 +49,11 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 -- | This operator attempts to place a player's piece
 --   on the board.
 (/?/) :: GameState -> Position -> Maybe GameState
-gs /?/ pos
-    | validPosition = Just $
-        gs { board = board gs // [(pos, Just $ player gs)] }
+gs /?/ p
+    | validPosition = Just $ gs { board = board gs // [(p, Just $ player gs)] }
     | otherwise = Nothing
   where
-    validPosition = and [inProgress gs, elem pos . indices $ board gs]
+    validPosition = and [inProgress gs, elem p . indices $ board gs]
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be.
