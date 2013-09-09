@@ -55,7 +55,10 @@ gs /?/ p
   where
     -- A valid position is both part of an in progress game and
     -- within the bounds of the game board.
-    validPosition = and [inProgress gs, elem p . indices $ board gs]
+    validPosition = and [ inProgress gs                 -- game in progress
+                        , elem p . indices $ board gs   -- position is on board
+                        , not . isJust $ (board gs) ! p -- square not taken
+                        ]
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be.

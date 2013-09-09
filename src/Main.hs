@@ -2,7 +2,9 @@
 module Main where
 
 import Data.Array (assocs)
+import qualified Data.Foldable as DF (forM_)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
+import Data.Maybe (isJust, fromJust)
 
 import Game.TicTacToe ( GameState(..)
                       , Square
@@ -81,10 +83,13 @@ main = runGame gameConfiguration $ do
                   mouseDownPrev <- readIORef' mouseDownRef
                   mouseDownNow  <- mouseButtonL
                   when (not mouseDownPrev && mouseDownNow) $ do
-                      clickLocation <- mousePosition
-                      case gameState /?/ coordinateToPosition clickLocation of
-                          Just gs' -> writeIORef' gameStateRef $ nextGameState gs'
-                          Nothing  -> return ()
+                      maybeGameState <- (gameState /?/)
+                                        <$> coordinateToPosition
+                                        <$> mousePosition
+                      when (isJust maybeGameState)
+                        $ writeIORef' gameStateRef
+                        $ nextGameState . fromJust
+                        $ maybeGameState
                   writeIORef' mouseDownRef mouseDownNow
                   
                   -- Draw the board grid and pieces to the screen.
@@ -115,10 +120,8 @@ c `whenPressed` f = keyChar c >>= flip when f
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
 drawSquare :: Position -> Square -> Game ()
-drawSquare pos square = case square of
-    Nothing  -> return ()
-    Just p -> translate (positionToCoordinate pos)
-                . fromBitmap . playerImage $ p
+drawSquare pos square = DF.forM_ square $
+    translate (positionToCoordinate pos) . fromBitmap . playerImage
 
 
 -- | Displays the game over text and commands reminders.
@@ -144,8 +147,8 @@ coordinateToPosition (V2 x y) = ( ceiling $ x / (width  / 3)
 
 -- | Converts a Square's position to a pixel location to draw a sprite.
 positionToCoordinate :: Position -> V2 Float
-positionToCoordinate (x, y) = V2 ( (width  / 2) + (fromIntegral x - 2) * (width  / 3))
-                                 ( (height / 2) + (fromIntegral y - 2) * (height / 3))
+positionToCoordinate (x, y) = V2 (( width/2)+(fromIntegral x-2)*( width/3))
+                                 ((height/2)+(fromIntegral y-2)*(height/3))
 
 -- | newIORef lifted to the Game monad
 newIORef' :: a -> Game (IORef a)
