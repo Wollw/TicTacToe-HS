@@ -18,7 +18,7 @@ executable TicTacToe
   main-is:             Main.hs
   hs-source-dirs:      src
   -- other-modules:       
-  build-depends:       base == 4.6.*, array, split, filepath
+  build-depends:       base == 4.6.*, array, split, filepath, free
                      , template-haskell
                      , free-game == 0.9.3.*
 

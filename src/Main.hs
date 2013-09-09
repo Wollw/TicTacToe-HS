@@ -83,16 +83,16 @@ main = runGame gameConfiguration $ do
                   mouseDownNow  <- mouseButtonL
                   when (not mouseDownPrev && mouseDownNow) $
                     F.mapM_ (writeIORef' gameStateRef) -- save the update
-                      =<< fmap nextGameState            -- update the game state
-                            <$> (gameState /?/)         -- place piece
-                            <$> coordinateToPosition    -- board position
-                            <$> mousePosition           -- pixel click position
+                          =<< return . fmap nextGameState
+                          =<< (\mgs -> F.mapM_ drawBoard mgs >> return mgs)
+                          =<< (gameState /?/)         -- add piece to board
+                          <$> coordinateToPosition    -- board position
+                          <$> mousePosition           -- pixel click position
                   writeIORef' mouseDownRef mouseDownNow -- Update click state
                   
                   -- Draw the board grid and pieces to the screen.
                   translate center $ fromBitmap borderImage
-                  sequence_ [ drawSquare coord square
-                            | (coord, square) <- assocs . board $ gameState]
+                  drawBoard gameState
           else do --
                   -- Game over logic.
                   --
@@ -116,10 +116,14 @@ c `whenPressed` f = keyChar c >>= flip when f
 
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
-drawSquare :: Position -> Square -> Game ()
+--drawSquare :: Position -> Square -> Game ()
 drawSquare pos square = F.forM_ square $
     translate (positionToCoordinate pos) . fromBitmap . playerImage
 
+
+--drawBoard :: GameState -> Game ()
+drawBoard gs = sequence_ [ drawSquare c s
+                         | (c, s) <- assocs . board $ gs ]
 
 -- | Displays the game over text and commands reminders.
 gameOver :: GameState -> Font -> Game ()

@@ -47,10 +47,13 @@ emptyBoard :: Board
 emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 
 -- | This operator attempts to place a player's piece
---   on the board.
+--   on the board.  A game state returned by this function
+--   represents the state after a piece is placed but
+--   before a winner or next turn is determined.
+--   ie: Before this state is passed to nextGameState
 (/?/) :: GameState -> Position -> Maybe GameState
 gs /?/ p
-    | validPosition = Just $ gs { board = board gs // [(p, Just $ player gs)] }
+    | validPosition = Just  $ gs { board = board gs // [(p, Just $ player gs)] }
     | otherwise = Nothing
   where
     validPosition = inProgress gs                 -- game in progress
@@ -58,7 +61,7 @@ gs /?/ p
                  && isNothing (board gs ! p)      -- square not taken
 
 -- | Evaluates a GameState to determine what the next game state
---   should be.
+--   should be based on its board state.
 nextGameState :: GameState -> GameState
 nextGameState gameState = case maybeFullRows gameState of
     Just xs -> Won . fromJust . head $ xs
