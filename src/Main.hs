@@ -34,16 +34,20 @@ gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
-fontPath :: FilePath
-fontPath = "res"</>"font"</>"VL-PGothic-Regular.ttf"
-
 -- | Load image resources.
-loadBitmaps "../res/img/"
+loadBitmaps "../res"
 
 -- | Helper function for providing the player's piece image Bitmap.
 playerImage :: Player -> Bitmap
 playerImage X = _playerx_png
 playerImage O = _playero_png
+
+-- | Helper function for providing the player win image.
+gameOverImage :: GameState -> Maybe Bitmap
+gameOverImage (Won X) = Just _wonx_png
+gameOverImage (Won O) = Just _wono_png
+gameOverImage Draw    = Just _draw_png
+gameOverImage _       = Nothing
 
 -- | The Bitmap used for the lines between squares of the board.
 borderImage :: Bitmap
@@ -58,7 +62,6 @@ main :: IO (Maybe a)
 main = runGame gameConfiguration $ do
     mouseDownRef <- newIORef' False
     gameStateRef <- newIORef' newGame
-    font <- loadFont fontPath
     forever $ do
         
         -- Draw the background
@@ -99,7 +102,7 @@ main = runGame gameConfiguration $ do
                   -- game ended (a draw or a win).  Starts a
                   -- new game if it detects a click.
                   --
-                  gameOver gameState font
+                  gameOver gameState
                   when (not mouseDownPrev && mouseDownNow) $
                     writeIORef' gameStateRef newGame
 
@@ -130,20 +133,8 @@ drawBoard gs = sequence_ [ drawSquare c s
                          | (c, s) <- assocs . board $ gs ]
 
 -- | Displays the game over text and commands reminders.
-gameOver :: GameState -> Font -> Game ()
-gameOver gs font = translate center
-                     $ colored black
-                     $ text font 17
-                     $ unlines [ gameStatusString gs
-                               , "Press 'q' to quit"
-                               , "or click to restart."
-                               ]
-
--- | Generates a string explaining the current game status.
-gameStatusString :: GameState -> String
-gameStatusString Draw             = "Draw!"
-gameStatusString (Won p)          = "Player "++show p++" wins!"
-gameStatusString (InProgress _ _) = "Game in progress."
+gameOver :: GameState -> Game ()
+gameOver gs = F.mapM_ (translate center . fromBitmap) $ gameOverImage gs
 
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
