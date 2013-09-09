@@ -82,13 +82,12 @@ main = runGame gameConfiguration $ do
                   mouseDownPrev <- readIORef' mouseDownRef
                   mouseDownNow  <- mouseButtonL
                   when (not mouseDownPrev && mouseDownNow) $
-                    F.mapM_ (writeIORef' gameStateRef)       -- save the update
-                          =<< return . fmap nextGameState    -- produce the updated game state
-                          =<< (\mgs -> F.mapM_ drawBoard mgs -- Display the intermediate board state
-                                    >> return mgs)
-                          =<< (gameState /?/)         -- add piece to board
-                          <$> coordinateToPosition    -- board position
-                          <$> mousePosition           -- pixel click position
+                    F.mapM_ (writeIORef' gameStateRef) -- save the update
+                      =<< nextGameState'       -- produce the updated game state
+                      =<< drawBoard'           -- Display the intermediate board state
+                      =<< (gameState /?/)      -- add piece to board
+                      <$> coordinateToPosition -- board position
+                      <$> mousePosition        -- pixel click position
                   writeIORef' mouseDownRef mouseDownNow -- Update click state
                   
                   -- Draw the board grid and pieces to the screen.
@@ -110,6 +109,10 @@ main = runGame gameConfiguration $ do
         'Q' `whenPressed` quit
 
         tick
+  where
+    nextGameState' = return . liftM nextGameState
+    drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState
+                             >> return maybeGameState
 
 -- | Evaluate a Game action if a character is pressed.
 whenPressed :: Char -> Game () -> Game ()
