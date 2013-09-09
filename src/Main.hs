@@ -129,8 +129,9 @@ drawSquare pos square = F.forM_ square $
 
 
 --drawBoard :: GameState -> Game ()
-drawBoard gs = sequence_ [ drawSquare c s
-                         | (c, s) <- assocs . board $ gs ]
+drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
+                                         | (c, s) <- assocs . board $ gs ]
+             | otherwise     = return ()
 
 -- | Displays the game over text and commands reminders.
 gameOver :: GameState -> Game ()
