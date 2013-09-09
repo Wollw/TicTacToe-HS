@@ -71,6 +71,8 @@ main = runGame gameConfiguration $ do
         -- the game has ended.
         --
         gameState <- readIORef' gameStateRef
+        mouseDownPrev <- readIORef' mouseDownRef
+        mouseDownNow  <- mouseButtonL
         if inProgress gameState
           then do --
                   -- Game play logic.
@@ -79,8 +81,6 @@ main = runGame gameConfiguration $ do
                   -- if the location is empty fill it with
                   -- the current player's piece.
                   --
-                  mouseDownPrev <- readIORef' mouseDownRef
-                  mouseDownNow  <- mouseButtonL
                   when (not mouseDownPrev && mouseDownNow) $
                     F.mapM_ (writeIORef' gameStateRef) -- save the update
                       =<< nextGameState'       -- produce the updated game state
@@ -88,7 +88,6 @@ main = runGame gameConfiguration $ do
                       =<< (gameState /?/)      -- add piece to board
                       <$> coordinateToPosition -- board position
                       <$> mousePosition        -- pixel click position
-                  writeIORef' mouseDownRef mouseDownNow -- Update click state
                   
                   -- Draw the board grid and pieces to the screen.
                   translate center $ fromBitmap borderImage
@@ -97,13 +96,14 @@ main = runGame gameConfiguration $ do
                   -- Game over logic.
                   --
                   -- Here we display the way in which the
-                  -- game ended (a draw or a win).  We also
-                  -- check for the restart command and restart
-                  -- the game if it is given.
+                  -- game ended (a draw or a win).  Starts a
+                  -- new game if it detects a click.
                   --
                   gameOver gameState font
-                  'R' `whenPressed` writeIORef' gameStateRef newGame
+                  when (not mouseDownPrev && mouseDownNow) $
+                    writeIORef' gameStateRef newGame
 
+        writeIORef' mouseDownRef mouseDownNow -- Update click state
         -- The quit command 'q' can be given at
         -- any to time to quit the game.
         'Q' `whenPressed` quit
@@ -136,7 +136,7 @@ gameOver gs font = translate center
                      $ text font 17
                      $ unlines [ gameStatusString gs
                                , "Press 'q' to quit"
-                               , "or 'r' to restart."
+                               , "or click to restart."
                                ]
 
 -- | Generates a string explaining the current game status.
