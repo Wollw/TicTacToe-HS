@@ -2,7 +2,7 @@
 module Main where
 
 import Data.Array (assocs)
-import qualified Data.Foldable as DF (forM_)
+import qualified Data.Foldable as DF (forM_, mapM_)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 import Data.Maybe (isJust, fromJust)
 
@@ -82,15 +82,13 @@ main = runGame gameConfiguration $ do
                   --
                   mouseDownPrev <- readIORef' mouseDownRef
                   mouseDownNow  <- mouseButtonL
-                  when (not mouseDownPrev && mouseDownNow) $ do
-                      maybeGameState <- (gameState /?/)
-                                        <$> coordinateToPosition
-                                        <$> mousePosition
-                      when (isJust maybeGameState)
-                        $ writeIORef' gameStateRef
-                        $ nextGameState . fromJust
-                        $ maybeGameState
-                  writeIORef' mouseDownRef mouseDownNow
+                  when (not mouseDownPrev && mouseDownNow) $
+                      DF.mapM_ (writeIORef' gameStateRef) -- save the update
+                        =<< fmap nextGameState            -- update the game state
+                            <$> (gameState /?/)           -- place piece
+                            <$> coordinateToPosition      -- board position
+                            <$> mousePosition             -- pixel click position
+                  writeIORef' mouseDownRef mouseDownNow -- Update click state
                   
                   -- Draw the board grid and pieces to the screen.
                   translate center $ fromBitmap borderImage
