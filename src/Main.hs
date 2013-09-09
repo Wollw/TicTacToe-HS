@@ -105,11 +105,11 @@ main = runGame gameConfiguration $ do
                   gameOver gameState
                   when (not mouseDownPrev && mouseDownNow) $
                     writeIORef' gameStateRef newGame
-
         writeIORef' mouseDownRef mouseDownNow -- Update click state
-        -- The quit command 'q' can be given at
+        
+        -- The quit command can be given at
         -- any to time to quit the game.
-        'Q' `whenPressed` quit
+        KeyEsc `whenSpecialKeyPressed` quit
 
         tick
   where
@@ -118,8 +118,12 @@ main = runGame gameConfiguration $ do
                              >> return maybeGameState
 
 -- | Evaluate a Game action if a character is pressed.
-whenPressed :: Char -> Game () -> Game ()
-c `whenPressed` f = keyChar c >>= flip when f
+whenCharPressed :: Char -> Game () -> Game ()
+c `whenCharPressed` f = flip when f =<< keyChar c
+
+-- | Evaluate a Game action if a character is pressed.
+whenSpecialKeyPressed :: SpecialKey -> Game () -> Game ()
+k `whenSpecialKeyPressed` f = flip when f =<< keySpecial k
 
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
