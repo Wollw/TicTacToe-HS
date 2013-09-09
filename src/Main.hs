@@ -2,9 +2,8 @@
 module Main where
 
 import Data.Array (assocs)
-import qualified Data.Foldable as DF (forM_, mapM_)
+import qualified Data.Foldable as F (forM_, mapM_)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
-import Data.Maybe (isJust, fromJust)
 
 import Game.TicTacToe ( GameState(..)
                       , Square
@@ -83,11 +82,11 @@ main = runGame gameConfiguration $ do
                   mouseDownPrev <- readIORef' mouseDownRef
                   mouseDownNow  <- mouseButtonL
                   when (not mouseDownPrev && mouseDownNow) $
-                      DF.mapM_ (writeIORef' gameStateRef) -- save the update
-                        =<< fmap nextGameState            -- update the game state
-                            <$> (gameState /?/)           -- place piece
-                            <$> coordinateToPosition      -- board position
-                            <$> mousePosition             -- pixel click position
+                    F.mapM_ (writeIORef' gameStateRef) -- save the update
+                      =<< fmap nextGameState            -- update the game state
+                            <$> (gameState /?/)         -- place piece
+                            <$> coordinateToPosition    -- board position
+                            <$> mousePosition           -- pixel click position
                   writeIORef' mouseDownRef mouseDownNow -- Update click state
                   
                   -- Draw the board grid and pieces to the screen.
@@ -118,7 +117,7 @@ c `whenPressed` f = keyChar c >>= flip when f
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
 drawSquare :: Position -> Square -> Game ()
-drawSquare pos square = DF.forM_ square $
+drawSquare pos square = F.forM_ square $
     translate (positionToCoordinate pos) . fromBitmap . playerImage
 
 
