@@ -53,7 +53,7 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 --   ie: Before this state is passed to nextGameState
 (/?/) :: GameState -> Position -> Maybe GameState
 gs /?/ p
-    | validPosition = Just  $ gs { board = board gs // [(p, Just $ player gs)] }
+    | validPosition = Just $ gs { board = board gs // [(p, Just $ player gs)] }
     | otherwise = Nothing
   where
     validPosition = inProgress gs                 -- game in progress
