@@ -87,7 +87,7 @@ main = runGame gameConfiguration $ do
                   when (not mouseDownPrev && mouseDownNow) $
                     F.mapM_ (writeIORef' gameStateRef) -- save the update
                       <$> nextGameState'       -- produce the updated game state
-                      =<< drawBoard'           -- Display the intermediate board state
+                      =<< drawBoard'           -- display the intermediate board state
                       =<< (gameState /?/)      -- add piece to board
                       <$> coordinateToPosition -- board position
                       <$> mousePosition        -- pixel click position
@@ -113,7 +113,7 @@ main = runGame gameConfiguration $ do
 
         tick
   where
-    nextGameState' = liftM nextGameState
+    nextGameState' = fmap nextGameState
     drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState
                              >> return maybeGameState
 
