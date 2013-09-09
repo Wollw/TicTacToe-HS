@@ -123,12 +123,12 @@ c `whenPressed` f = keyChar c >>= flip when f
 
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
---drawSquare :: Position -> Square -> Game ()
+drawSquare :: Position -> Square -> Game ()
 drawSquare pos square = F.forM_ square $
     translate (positionToCoordinate pos) . fromBitmap . playerImage
 
 
---drawBoard :: GameState -> Game ()
+drawBoard :: GameState -> Game ()
 drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
                                          | (c, s) <- assocs . board $ gs ]
              | otherwise     = return ()
