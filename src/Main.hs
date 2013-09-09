@@ -82,9 +82,10 @@ main = runGame gameConfiguration $ do
                   mouseDownPrev <- readIORef' mouseDownRef
                   mouseDownNow  <- mouseButtonL
                   when (not mouseDownPrev && mouseDownNow) $
-                    F.mapM_ (writeIORef' gameStateRef) -- save the update
-                          =<< return . fmap nextGameState
-                          =<< (\mgs -> F.mapM_ drawBoard mgs >> return mgs)
+                    F.mapM_ (writeIORef' gameStateRef)       -- save the update
+                          =<< return . fmap nextGameState    -- produce the updated game state
+                          =<< (\mgs -> F.mapM_ drawBoard mgs -- Display the intermediate board state
+                                    >> return mgs)
                           =<< (gameState /?/)         -- add piece to board
                           <$> coordinateToPosition    -- board position
                           <$> mousePosition           -- pixel click position
