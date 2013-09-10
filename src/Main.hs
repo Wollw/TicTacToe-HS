@@ -4,7 +4,7 @@ module Main where
 import Codec.Picture.Repa (decodeImageRGBA, imgData)
 
 import Data.Array (assocs)
-import qualified Data.Foldable as F (forM_, mapM_)
+import qualified Data.Foldable as F (Foldable(..), forM_, mapM_)
 import Data.FileEmbed (embedDir)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 
@@ -91,10 +91,11 @@ main = runGame gameConfiguration $ do
                   --
                   writeIORef' previousGameStateRef gameState
                   when (not mouseDownPrev && mouseDownNow) $
-                    saveGameState_ gameStateRef -- save the update
+                    writeIORefF' gameStateRef -- save the update
                       <$> nextGameState'        -- produce the updated game state
                       =<< drawBoard'            -- display the intermediate board state
-                      =<< saveGameState previousGameStateRef -- save the current board state for drawing if game ends
+                      =<< (\mgs -> writeIORefF' previousGameStateRef mgs
+                                >> return mgs)  -- save the current board state for drawing if game ends
                       =<< (gameState /?/)       -- add piece to board
                       <$> coordinateToPosition  -- board position
                       <$> mousePosition         -- pixel click position
@@ -124,8 +125,6 @@ main = runGame gameConfiguration $ do
   where
     nextGameState' = fmap nextGameState
     drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState >> return maybeGameState
-    saveGameState ref maybeGS = F.mapM_ (writeIORef' ref) maybeGS >> return maybeGS
-    saveGameState_ ref maybeGS = void $ saveGameState ref maybeGS
 
 -- | Convenience function for translating pictures that
 --   are wrapped in a Maybe.
@@ -180,3 +179,12 @@ readIORef' = embedIO . readIORef
 -- | writeIORef lifted to the Game monad
 writeIORef' :: IORef a -> a -> Game ()
 writeIORef' ref = embedIO . writeIORef ref
+
+-- | A variant of writeIORef for use on values in a
+--   Foldable context.
+writeIORefF :: F.Foldable f => IORef a -> f a -> IO ()
+writeIORefF ref = F.mapM_ (writeIORef ref)
+
+-- | writeIORefF lifted to the Game monad
+writeIORefF' :: F.Foldable f => IORef a -> f a -> Game ()
+writeIORefF' ref = embedIO . writeIORefF ref
