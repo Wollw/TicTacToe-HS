@@ -50,11 +50,11 @@ playerImage :: Player -> FilePath
 playerImage X = "playerx.png"
 playerImage O = "playero.png"
 
-gameOverImage :: GameState -> Maybe FilePath
-gameOverImage (Won X) = Just "wonx.png"
-gameOverImage (Won O) = Just "wono.png"
-gameOverImage Draw    = Just "draw.png"
-gameOverImage _       = Nothing
+maybeGameOverImage :: GameState -> Maybe FilePath
+maybeGameoverImage (Won X) = Just "wonx.png"
+maybeGameOverImage (Won O) = Just "wono.png"
+maybeGameOverImage Draw    = Just "draw.png"
+maybeGameOverImage _       = Nothing
 
 borderImage :: FilePath
 borderImage = "border.png"
@@ -151,7 +151,7 @@ drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
 
 -- | Displays the game over text and commands reminders.
 gameOver :: GameState -> Game ()
-gameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> gameOverImage gs
+gameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> maybeGameOverImage gs
 
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
