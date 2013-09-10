@@ -70,7 +70,7 @@ main = runGame gameConfiguration $ do
     forever $ do
         
         -- Draw the background
-        translateMaybe center $ maybePicture "background.png"
+        translateMaybe center $ maybePicture backgroundImage
 
         --
         -- Two paths based on game state.
