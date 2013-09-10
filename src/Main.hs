@@ -1,8 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 
+import Codec.Picture.Repa (decodeImageRGBA, imgData)
+
 import Data.Array (assocs)
 import qualified Data.Foldable as F (forM_, mapM_)
+import Data.FileEmbed (embedDir)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 
 import Game.TicTacToe ( GameState(..)
@@ -34,29 +37,30 @@ gameConfiguration = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
--- | Load image resources.
-loadBitmaps "../res"
+-- | Used to load an embedded image file.
+maybePicture :: Picture2D p => FilePath -> Maybe (p ())
+maybePicture name = fromBitmap
+                <$> toBitmap
+                <$> imgData
+                <$> (either fail return
+                    =<< decodeImageRGBA
+                    <$> lookup name $(embedDir "res"))
 
--- | Helper function for providing the player's piece image Bitmap.
-playerImage :: Player -> Bitmap
-playerImage X = _playerx_png
-playerImage O = _playero_png
+playerImage :: Player -> FilePath
+playerImage X = "playerx.png"
+playerImage O = "playero.png"
 
--- | Helper function for providing the player win image.
-gameOverImage :: GameState -> Maybe Bitmap
-gameOverImage (Won X) = Just _wonx_png
-gameOverImage (Won O) = Just _wono_png
-gameOverImage Draw    = Just _draw_png
+gameOverImage :: GameState -> Maybe FilePath
+gameOverImage (Won X) = Just "wonx.png"
+gameOverImage (Won O) = Just "wono.png"
+gameOverImage Draw    = Just "draw.png"
 gameOverImage _       = Nothing
 
--- | The Bitmap used for the lines between squares of the board.
-borderImage :: Bitmap
-borderImage = _border_png
+borderImage :: FilePath
+borderImage = "border.png"
 
--- | The Bitmap used for the background of the board.
---   Displayed behind the squares.
-backgroundImage :: Bitmap
-backgroundImage = _background_png
+backgroundImage :: FilePath
+backgroundImage = "background.png"
 
 main :: IO (Maybe a)
 main = runGame gameConfiguration $ do
@@ -65,7 +69,7 @@ main = runGame gameConfiguration $ do
     forever $ do
         
         -- Draw the background
-        translate center $ fromBitmap backgroundImage
+        translateMaybe center $ maybePicture "background.png"
 
         --
         -- Two paths based on game state.
@@ -93,7 +97,7 @@ main = runGame gameConfiguration $ do
                       <$> mousePosition        -- pixel click position
                   
                   -- Draw the board grid and pieces to the screen.
-                  translate center $ fromBitmap borderImage
+                  translateMaybe center $ maybePicture borderImage
                   drawBoard gameState
           else do --
                   -- Game over logic.
@@ -117,6 +121,11 @@ main = runGame gameConfiguration $ do
     drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState
                              >> return maybeGameState
 
+-- | Convenience function for translating pictures that
+--   are wrapped in a Maybe.
+translateMaybe :: (Monad m, Picture2D m) => V2 Float -> Maybe (m a) -> m ()
+translateMaybe pos = F.mapM_ $ translate pos
+
 -- | Evaluate a Game action if a character is pressed.
 whenCharPressed :: Char -> Game () -> Game ()
 c `whenCharPressed` f = flip when f =<< keyChar c
@@ -129,9 +138,12 @@ k `whenSpecialKeyPressed` f = flip when f =<< keySpecial k
 --   draws the appropriate image to that location
 drawSquare :: Position -> Square -> Game ()
 drawSquare pos square = F.forM_ square $
-    translate (positionToCoordinate pos) . fromBitmap . playerImage
+    translateMaybe (positionToCoordinate pos) . maybePicture . playerImage
 
 
+-- | Draws all the squares of the board to the screen
+--   if the game is in progress. Returns True if it
+--   succeeds, False otherwise.
 drawBoard :: GameState -> Game ()
 drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
                                          | (c, s) <- assocs . board $ gs ]
@@ -139,7 +151,7 @@ drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
 
 -- | Displays the game over text and commands reminders.
 gameOver :: GameState -> Game ()
-gameOver gs = F.mapM_ (translate center . fromBitmap) $ gameOverImage gs
+gameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> gameOverImage gs
 
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
