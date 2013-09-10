@@ -4,7 +4,7 @@ module Main where
 import Codec.Picture.Repa (decodeImageRGBA, imgData)
 
 import Data.Array (assocs)
-import qualified Data.Foldable as F (Foldable(..), forM_, mapM_)
+import qualified Data.Foldable as F (Foldable, forM_, mapM_)
 import Data.FileEmbed (embedDir)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 
