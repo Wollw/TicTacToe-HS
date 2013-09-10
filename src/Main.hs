@@ -51,7 +51,7 @@ playerImage X = "playerx.png"
 playerImage O = "playero.png"
 
 maybeGameOverImage :: GameState -> Maybe FilePath
-maybeGameoverImage (Won X) = Just "wonx.png"
+maybeGameOverImage (Won X) = Just "wonx.png"
 maybeGameOverImage (Won O) = Just "wono.png"
 maybeGameOverImage Draw    = Just "draw.png"
 maybeGameOverImage _       = Nothing
@@ -66,6 +66,7 @@ main :: IO (Maybe a)
 main = runGame gameConfiguration $ do
     mouseDownRef <- newIORef' False
     gameStateRef <- newIORef' newGame
+    previousGameStateRef <- newIORef' newGame
     forever $ do
         
         -- Draw the background
@@ -88,13 +89,15 @@ main = runGame gameConfiguration $ do
                   -- if the location is empty fill it with
                   -- the current player's piece.
                   --
+                  writeIORef' previousGameStateRef gameState
                   when (not mouseDownPrev && mouseDownNow) $
-                    F.mapM_ (writeIORef' gameStateRef) -- save the update
-                      <$> nextGameState'       -- produce the updated game state
-                      =<< drawBoard'           -- display the intermediate board state
-                      =<< (gameState /?/)      -- add piece to board
-                      <$> coordinateToPosition -- board position
-                      <$> mousePosition        -- pixel click position
+                    saveGameState_ gameStateRef -- save the update
+                      <$> nextGameState'        -- produce the updated game state
+                      =<< drawBoard'            -- display the intermediate board state
+                      =<< saveGameState previousGameStateRef -- save the current board state for drawing if game ends
+                      =<< (gameState /?/)       -- add piece to board
+                      <$> coordinateToPosition  -- board position
+                      <$> mousePosition         -- pixel click position
                   
                   -- Draw the board grid and pieces to the screen.
                   translateMaybe center $ maybePicture borderImage
@@ -106,7 +109,9 @@ main = runGame gameConfiguration $ do
                   -- game ended (a draw or a win).  Starts a
                   -- new game if it detects a click.
                   --
-                  gameOver gameState
+                  translateMaybe center $ maybePicture borderImage
+                  drawBoard =<< readIORef' previousGameStateRef
+                  drawGameOver gameState
                   when (not mouseDownPrev && mouseDownNow) $
                     writeIORef' gameStateRef newGame
         writeIORef' mouseDownRef mouseDownNow -- Update click state
@@ -118,8 +123,9 @@ main = runGame gameConfiguration $ do
         tick
   where
     nextGameState' = fmap nextGameState
-    drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState
-                             >> return maybeGameState
+    drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState >> return maybeGameState
+    saveGameState ref maybeGS = F.mapM_ (writeIORef' ref) maybeGS >> return maybeGS
+    saveGameState_ ref maybeGS = void $ saveGameState ref maybeGS
 
 -- | Convenience function for translating pictures that
 --   are wrapped in a Maybe.
@@ -150,8 +156,8 @@ drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
              | otherwise     = return ()
 
 -- | Displays the game over text and commands reminders.
-gameOver :: GameState -> Game ()
-gameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> maybeGameOverImage gs
+drawGameOver :: GameState -> Game ()
+drawGameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> maybeGameOverImage gs
 
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
