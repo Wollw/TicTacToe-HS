@@ -9,11 +9,11 @@ import Data.FileEmbed (embedDir)
 import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 
 import Game.TicTacToe ( GameState(..)
+                      , GamePhase(..)
                       , Square
                       , Position
                       , Player (..)
                       , newGame
-                      , nextGameState
                       , (/?/)
                       , inProgress
                       )
@@ -51,10 +51,10 @@ playerImage X = "playerx.png"
 playerImage O = "playero.png"
 
 maybeGameOverImage :: GameState -> Maybe FilePath
-maybeGameOverImage (Won X) = Just "wonx.png"
-maybeGameOverImage (Won O) = Just "wono.png"
-maybeGameOverImage Draw    = Just "draw.png"
-maybeGameOverImage _       = Nothing
+maybeGameOverImage gs | phase gs == Won X      = Just "wonx.png"
+                      | phase gs == Won O      = Just "wono.png"
+                      | phase gs == Draw       = Just "draw.png"
+                      | phase gs == InProgress = Nothing
 
 borderImage :: FilePath
 borderImage = "border.png"
@@ -92,10 +92,6 @@ main = runGame gameConfiguration $ do
                   writeIORef' previousGameStateRef gameState
                   when (not mouseDownPrev && mouseDownNow) $
                     writeIORefF' gameStateRef -- save the update
-                      <$> nextGameState'        -- produce the updated game state
-                      =<< drawBoard'            -- display the intermediate board state
-                      =<< (\mgs -> writeIORefF' previousGameStateRef mgs
-                                >> return mgs)  -- save the current board state for drawing if game ends
                       =<< (gameState /?/)       -- add piece to board
                       <$> coordinateToPosition  -- board position
                       <$> mousePosition         -- pixel click position
@@ -111,7 +107,7 @@ main = runGame gameConfiguration $ do
                   -- new game if it detects a click.
                   --
                   translateMaybe center $ maybePicture borderImage
-                  drawBoard =<< readIORef' previousGameStateRef
+                  drawBoard gameState
                   drawGameOver gameState
                   when (not mouseDownPrev && mouseDownNow) $
                     writeIORef' gameStateRef newGame
@@ -122,9 +118,6 @@ main = runGame gameConfiguration $ do
         KeyEsc `whenSpecialKeyPressed` quit
 
         tick
-  where
-    nextGameState' = fmap nextGameState
-    drawBoard' maybeGameState = F.mapM_ drawBoard maybeGameState >> return maybeGameState
 
 -- | Convenience function for translating pictures that
 --   are wrapped in a Maybe.
@@ -150,9 +143,8 @@ drawSquare pos square = F.forM_ square $
 --   if the game is in progress. Returns True if it
 --   succeeds, False otherwise.
 drawBoard :: GameState -> Game ()
-drawBoard gs | inProgress gs = sequence_ [ drawSquare c s
-                                         | (c, s) <- assocs . board $ gs ]
-             | otherwise     = return ()
+drawBoard gs = sequence_ [ drawSquare c s
+                         | (c, s) <- assocs . board $ gs ]
 
 -- | Displays the game over text and commands reminders.
 drawGameOver :: GameState -> Game ()

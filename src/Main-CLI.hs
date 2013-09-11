@@ -13,12 +13,14 @@ import System.Exit (exitSuccess)
 import Text.Read (readMaybe)
 
 import Game.TicTacToe ( GameState(..)
+                      , GamePhase(..)
                       , Position
                       , Board
                       , Square
                       , newGame
                       , (/?/)
-                      , nextGameState)
+                      , inProgress
+                      )
 
 data Command = Invalid
              | Quit
@@ -42,14 +44,12 @@ runGame gs = do
         Quit      -> putStrLn "Quitting..." >> exitSuccess
         Invalid   -> putStrLn "Invalid command." >> runGame gs
         Place pos -> case gs /?/ pos of
-                        Just gs' -> case nextGameState gs' of
-                            gs''@(InProgress _ _) -> do
-                                putStrLn "=========="
-                                putStrLn . printGameState $ gs''
-                                runGame gs''
-                            gs'' -> do
-                                putStrLn . printBoard . board $ gs'
-                                putStrLn . printGameState $ gs''
+                        Just gs' -> if inProgress gs' 
+                                      then do putStrLn "=========="
+                                              putStrLn . printGameState $ gs'
+                                              runGame gs'
+                                      else do putStrLn . printBoard . board $ gs'
+                                              putStrLn . printGameState $ gs'
                         Nothing -> do putStrLn "Invalid position."
                                       runGame gs
 
@@ -63,11 +63,11 @@ getCommand = do
             _   -> Invalid
 
 printGameState :: GameState -> String
-printGameState (InProgress p b) = unlines [ "Player: " ++ show p
-                                          , " Board:", printBoard b
-                                          ]
-printGameState Draw    = "The game ended in a draw."
-printGameState (Won p) = "The game was won by player " ++ show p ++ "."
+printGameState (GameState p b InProgress) = unlines [ "Player: " ++ show p
+                                                    , " Board:", printBoard b
+                                                    ]
+printGameState (GameState _ _ Draw)    = "The game ended in a draw."
+printGameState (GameState _ _ (Won p)) = "The game was won by player " ++ show p ++ "."
 
 printBoard :: Board -> String
 printBoard b = unlines . intersperse "-----" $ map (intersperse '|') rows

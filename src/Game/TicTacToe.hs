@@ -8,13 +8,23 @@ import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust, isNothing)
 
--- | Representation of the current state of the game.
-data GameState = InProgress { player :: Player
-                            , board  :: Board
-                            }
+data GameState = GameState { player :: Player
+                           , board  :: Board
+                           , phase  :: GamePhase
+                           } deriving Show
+
+data GamePhase = InProgress
                | Won Player
                | Draw
-               deriving Show
+               deriving (Eq, Show)
+
+-- | Representation of the current state of the game.
+--data GameState = InProgress { player :: Player
+--                            , board  :: Board
+--                            }
+--               | Won Player
+--               | Draw
+--               deriving Show
 
 -- | Representation of each player in the game.
 data Player = X | O deriving (Show, Eq, Enum)
@@ -39,12 +49,18 @@ type Position = (Int, Int)
 -- | A blank game state representing the initial
 --   state of a game of TicTacToe.
 newGame :: GameState
-newGame = InProgress X emptyBoard
+newGame = GameState X emptyBoard InProgress
 
 -- | A 3x3 array of Squares representing a board with
 --   no pieces placed on it.
 emptyBoard :: Board
 emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
+
+xGame = GameState X xBoard InProgress
+xBoard :: Board
+xBoard = listArray ((1,1),(3,3)) $ replicate 9 (Just X)
+
+
 
 -- | This operator attempts to place a player's piece
 --   on the board.  A game state returned by this function
@@ -53,7 +69,10 @@ emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 --   ie: Before this state is passed to nextGameState
 (/?/) :: GameState -> Position -> Maybe GameState
 gs /?/ p
-    | validPosition = Just $ gs { board = board gs // [(p, Just $ player gs)] }
+    | validPosition = Just . updateGamePhase $
+                        gs { board  = board gs // [(p, Just $ player gs)]
+                           , player = succWrap $ player gs
+                           }
     | otherwise = Nothing
   where
     validPosition = inProgress gs                 -- game in progress
@@ -62,12 +81,12 @@ gs /?/ p
 
 -- | Evaluates a GameState to determine what the next game state
 --   should be based on its board state.
-nextGameState :: GameState -> GameState
-nextGameState gameState = case maybeFullRows gameState of
-    Just xs -> Won . fromJust . head $ xs
+updateGamePhase :: GameState -> GameState
+updateGamePhase gameState = case maybeFullRows gameState of
+    Just xs -> gameState { phase = Won . fromJust . head $ xs }
     Nothing -> if boardFull gameState
-                 then Draw
-                 else gameState { player = succWrap . player $ gameState }
+                 then gameState { phase = Draw }
+                 else gameState { phase = InProgress }
   where
     boardFull     = notElem Nothing . elems . board
     maybeFullRows = find full . rows . board
@@ -80,5 +99,5 @@ nextGameState gameState = case maybeFullRows gameState of
 
 -- | Determines if the game is currently in progress or not.
 inProgress :: GameState -> Bool
-inProgress (InProgress _ _) = True
-inProgress _                = False
+inProgress (GameState _ _ InProgress) = True
+inProgress _                          = False
