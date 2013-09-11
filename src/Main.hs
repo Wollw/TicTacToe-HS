@@ -62,38 +62,37 @@ borderImage = "border.png"
 backgroundImage :: FilePath
 backgroundImage = "background.png"
 
-main :: IO (Maybe a)
-main = runGame gameConfiguration $ do
-    mouseDownRef <- newIORef' False
-    gameStateRef <- newIORef' newGame
-    forever $ do
-        -- The quit command can be given at
-        -- any to time to quit the game.
-        KeyEsc `whenSpecialKeyPressed` quit
+main :: IO ()
+main = void . runGame gameConfiguration $ do
+  mouseDownRef <- newIORef' False
+  gameStateRef <- newIORef' newGame
+  forever $ do
+    gameState     <- readIORef' gameStateRef
+    mouseDownPrev <- readIORef' mouseDownRef
+    mouseDownNow  <- mouseButtonL
+    
+    -- The quit command can be given at
+    -- any to time to quit the game.
+    KeyEsc `whenSpecialKeyPressed` quit
 
-        gameState     <- readIORef' gameStateRef
-        mouseDownPrev <- readIORef' mouseDownRef
-        mouseDownNow  <- mouseButtonL
-        --
-        -- We process events on mouse clicks.
-        -- If a mouse click occurred we either
-        -- attempt to place a new piece if the game
-        -- is in progress or start a new game
-        -- if the game is not in progress.
-        --
-        when (not mouseDownPrev && mouseDownNow) $
-          if inProgress gameState
-            then writeIORefF' gameStateRef   -- save the update
-                 =<< (gameState /?/)       -- add piece to board
-                 <$> coordinateToPosition  -- board position
-                 <$> mousePosition         -- pixel click position
-            else writeIORef' gameStateRef newGame -- start new game
+    --
+    -- We process events on mouse clicks.
+    -- If a mouse click occurred we either
+    -- attempt to place a new piece if the game
+    -- is in progress or start a new game
+    -- if the game is not in progress.
+    --
+    when (not mouseDownPrev && mouseDownNow) $
+      if inProgress gameState
+        then writeIORefF' gameStateRef -- save the update
+             =<< (gameState /?/)       -- add piece to board
+             <$> coordinateToPosition  -- board position
+             <$> mousePosition         -- pixel click position
+        else writeIORef' gameStateRef newGame -- start new game
+    writeIORef' mouseDownRef mouseDownNow -- Update click state
+    drawGameState gameState
 
-        writeIORef' mouseDownRef mouseDownNow -- Update click state
-
-        drawGameState gameState
-
-        tick
+    tick
 
 -- | Convenience function for translating pictures that
 --   are wrapped in a Maybe.
