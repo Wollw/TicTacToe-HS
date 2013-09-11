@@ -119,10 +119,10 @@ drawSquare pos square = F.forM_ square $
 --   graphic elements.
 drawGameState :: GameState -> Game ()
 drawGameState gs = do
-        translateMaybe center $ maybePicture backgroundImage         -- draw background
-        translateMaybe center $ maybePicture borderImage             -- draw border
-        sequence_ [ drawSquare c s | (c, s) <- assocs . board $ gs ] -- draw pieces
-        maybeDrawGameOver gs -- draw game over screen if game is over
+    translateMaybe center $ maybePicture backgroundImage         -- draw background
+    translateMaybe center $ maybePicture borderImage             -- draw border
+    sequence_ [ drawSquare c s | (c, s) <- assocs . board $ gs ] -- draw pieces
+    maybeDrawGameOver gs -- draw game over screen if game is over
   where
     maybeDrawGameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> maybeGameOverImage gs
 
