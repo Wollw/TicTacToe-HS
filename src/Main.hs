@@ -66,56 +66,32 @@ main :: IO (Maybe a)
 main = runGame gameConfiguration $ do
     mouseDownRef <- newIORef' False
     gameStateRef <- newIORef' newGame
-    previousGameStateRef <- newIORef' newGame
     forever $ do
-        
-        -- Draw the background
-        translateMaybe center $ maybePicture backgroundImage
-
-        --
-        -- Two paths based on game state.
-        -- We run the normal game logic if the game is still
-        -- in progress.  We display the game over screen if
-        -- the game has ended.
-        --
-        gameState <- readIORef' gameStateRef
-        mouseDownPrev <- readIORef' mouseDownRef
-        mouseDownNow  <- mouseButtonL
-        if inProgress gameState
-          then do --
-                  -- Game play logic.
-                  --
-                  -- Here we check for new mouse clicks and
-                  -- if the location is empty fill it with
-                  -- the current player's piece.
-                  --
-                  writeIORef' previousGameStateRef gameState
-                  when (not mouseDownPrev && mouseDownNow) $
-                    writeIORefF' gameStateRef -- save the update
-                      =<< (gameState /?/)       -- add piece to board
-                      <$> coordinateToPosition  -- board position
-                      <$> mousePosition         -- pixel click position
-                  
-                  -- Draw the board grid and pieces to the screen.
-                  translateMaybe center $ maybePicture borderImage
-                  drawBoard gameState
-          else do --
-                  -- Game over logic.
-                  --
-                  -- Here we display the way in which the
-                  -- game ended (a draw or a win).  Starts a
-                  -- new game if it detects a click.
-                  --
-                  translateMaybe center $ maybePicture borderImage
-                  drawBoard gameState
-                  drawGameOver gameState
-                  when (not mouseDownPrev && mouseDownNow) $
-                    writeIORef' gameStateRef newGame
-        writeIORef' mouseDownRef mouseDownNow -- Update click state
-        
         -- The quit command can be given at
         -- any to time to quit the game.
         KeyEsc `whenSpecialKeyPressed` quit
+
+        gameState     <- readIORef' gameStateRef
+        mouseDownPrev <- readIORef' mouseDownRef
+        mouseDownNow  <- mouseButtonL
+        --
+        -- We process events on mouse clicks.
+        -- If a mouse click occurred we either
+        -- attempt to place a new piece if the game
+        -- is in progress or start a new game
+        -- if the game is not in progress.
+        --
+        when (not mouseDownPrev && mouseDownNow) $
+          if inProgress gameState
+            then writeIORefF' gameStateRef   -- save the update
+                   =<< (gameState /?/)       -- add piece to board
+                   <$> coordinateToPosition  -- board position
+                   <$> mousePosition         -- pixel click position
+            else writeIORef' gameStateRef newGame -- start new game
+
+        writeIORef' mouseDownRef mouseDownNow -- Update click state
+
+        drawGameState gameState
 
         tick
 
@@ -138,17 +114,17 @@ drawSquare :: Position -> Square -> Game ()
 drawSquare pos square = F.forM_ square $
     translateMaybe (positionToCoordinate pos) . maybePicture . playerImage
 
-
 -- | Draws all the squares of the board to the screen
---   if the game is in progress. Returns True if it
---   succeeds, False otherwise.
-drawBoard :: GameState -> Game ()
-drawBoard gs = sequence_ [ drawSquare c s
-                         | (c, s) <- assocs . board $ gs ]
-
--- | Displays the game over text and commands reminders.
-drawGameOver :: GameState -> Game ()
-drawGameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> maybeGameOverImage gs
+--   if the game is in progress as well as the other
+--   graphic elements.
+drawGameState :: GameState -> Game ()
+drawGameState gs = do
+        translateMaybe center $ maybePicture backgroundImage         -- draw background
+        translateMaybe center $ maybePicture borderImage             -- draw border
+        sequence_ [ drawSquare c s | (c, s) <- assocs . board $ gs ] -- draw pieces
+        maybeDrawGameOver gs -- draw game over screen if game is over
+  where
+    maybeDrawGameOver gs = F.mapM_ (translateMaybe center) $ maybePicture <$> maybeGameOverImage gs
 
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
