@@ -51,10 +51,10 @@ playerImage X = "playerx.png"
 playerImage O = "playero.png"
 
 maybeGameOverImage :: GameState -> Maybe FilePath
-maybeGameOverImage gs | phase gs == Won X      = Just "wonx.png"
-                      | phase gs == Won O      = Just "wono.png"
-                      | phase gs == Draw       = Just "draw.png"
-                      | phase gs == InProgress = Nothing
+maybeGameOverImage gs | phase gs == Won X = Just "wonx.png"
+                      | phase gs == Won O = Just "wono.png"
+                      | phase gs == Draw  = Just "draw.png"
+                      | otherwise         = Nothing
 
 borderImage :: FilePath
 borderImage = "border.png"
