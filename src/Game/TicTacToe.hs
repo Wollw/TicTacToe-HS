@@ -8,23 +8,17 @@ import Data.List (transpose, find)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust, isNothing)
 
+-- | Representation of the current state of the game.
 data GameState = GameState { player :: Player
                            , board  :: Board
                            , phase  :: GamePhase
                            } deriving Show
 
+-- | Representation of the current phase the game is in.
 data GamePhase = InProgress
                | Won Player
                | Draw
                deriving (Eq, Show)
-
--- | Representation of the current state of the game.
---data GameState = InProgress { player :: Player
---                            , board  :: Board
---                            }
---               | Won Player
---               | Draw
---               deriving Show
 
 -- | Representation of each player in the game.
 data Player = X | O deriving (Show, Eq, Enum)
@@ -56,17 +50,9 @@ newGame = GameState X emptyBoard InProgress
 emptyBoard :: Board
 emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
 
-xGame = GameState X xBoard InProgress
-xBoard :: Board
-xBoard = listArray ((1,1),(3,3)) $ replicate 9 (Just X)
-
-
-
 -- | This operator attempts to place a player's piece
---   on the board.  A game state returned by this function
---   represents the state after a piece is placed but
---   before a winner or next turn is determined.
---   ie: Before this state is passed to nextGameState
+--   on the board and returns the updated game state
+--   if it succeeds.
 (/?/) :: GameState -> Position -> Maybe GameState
 gs /?/ p
     | validPosition = Just . updateGamePhase $
