@@ -40,11 +40,11 @@ gameConfiguration = def { _windowSize  = V2 width height
 -- | Used to load an embedded image file.
 maybePicture :: Picture2D p => FilePath -> Maybe (p ())
 maybePicture name = fromBitmap
-                <$> toBitmap
-                <$> imgData
-                <$> (either fail return
-                    =<< decodeImageRGBA
-                    <$> lookup name $(embedDir "res"))
+                    <$> toBitmap
+                    <$> imgData
+                    <$> (either fail return
+                        =<< decodeImageRGBA
+                        <$> lookup name $(embedDir "res"))
 
 playerImage :: Player -> FilePath
 playerImage X = "playerx.png"
@@ -84,9 +84,9 @@ main = runGame gameConfiguration $ do
         when (not mouseDownPrev && mouseDownNow) $
           if inProgress gameState
             then writeIORefF' gameStateRef   -- save the update
-                   =<< (gameState /?/)       -- add piece to board
-                   <$> coordinateToPosition  -- board position
-                   <$> mousePosition         -- pixel click position
+                 =<< (gameState /?/)       -- add piece to board
+                 <$> coordinateToPosition  -- board position
+                 <$> mousePosition         -- pixel click position
             else writeIORef' gameStateRef newGame -- start new game
 
         writeIORef' mouseDownRef mouseDownNow -- Update click state
