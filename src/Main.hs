@@ -76,8 +76,8 @@ main = void . runGame gameConfiguration $ do
     KeyEsc `whenSpecialKeyPressed` quit
 
     --
-    -- We process events on mouse clicks.
-    -- If a mouse click occurred we either
+    -- Process events on mouse clicks.
+    -- If a mouse click occurred either
     -- attempt to place a new piece if the game
     -- is in progress or start a new game
     -- if the game is not in progress.
