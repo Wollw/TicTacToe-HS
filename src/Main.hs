@@ -7,7 +7,6 @@ import Control.Monad.Free.Church (F)
 import Data.Array (assocs)
 import Data.FileEmbed (embedDir)
 import qualified Data.Foldable as F (Foldable, forM_, mapM_)
-import Data.Maybe
 
 import Game.TicTacToe
 
