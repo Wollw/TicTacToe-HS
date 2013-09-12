@@ -19,7 +19,8 @@ executable TicTacToe
   hs-source-dirs:      src
   -- other-modules:       
   build-depends:       base == 4.6.*, array, split, filepath, free
-                     , template-haskell, file-embed
+                     , template-haskell, file-embed, mtl
+                     , transformers
                      , free-game == 0.9.3.*
                      , JuicyPixels-repa
 

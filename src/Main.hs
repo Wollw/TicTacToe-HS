@@ -1,7 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, FlexibleContexts #-}
 module Main where
 
 import Codec.Picture.Repa (decodeImageRGBA, imgData)
+
+import Control.Monad.Free (MonadFree)
 
 import Data.Array (assocs)
 import qualified Data.Foldable as F (Foldable, forM_, mapM_)
@@ -109,14 +111,14 @@ k `whenSpecialKeyPressed` f = flip when f =<< keySpecial k
 
 -- | Given a pixel location and a TicTacToe Square
 --   draws the appropriate image to that location
-drawSquare :: Position -> Square -> Game ()
+drawSquare :: (Monad m, Picture2D m) => Position -> Square -> m ()
 drawSquare pos square = F.forM_ square $
     translateMaybe (positionToCoordinate pos) . maybePicture . playerImage
 
 -- | Draws all the squares of the board to the screen
 --   if the game is in progress as well as the other
 --   graphic elements.
-drawGameState :: GameState -> Game ()
+drawGameState :: (Monad m, Picture2D m) => GameState -> m ()
 drawGameState gs = do
     translateMaybe center $ maybePicture backgroundImage         -- draw background
     translateMaybe center $ maybePicture borderImage             -- draw border
@@ -136,15 +138,15 @@ positionToCoordinate (x, y) = V2 (( width/2)+(fromIntegral x-2)*( width/3))
                                  ((height/2)+(fromIntegral y-2)*(height/3))
 
 -- | newIORef lifted to the Game monad
-newIORef' :: a -> Game (IORef a)
+newIORef' :: MonadFree (UI n) m => a -> m (IORef a)
 newIORef' = embedIO . newIORef
 
 -- | readIORef lifted to the Game monad
-readIORef' :: IORef a -> Game a
+readIORef' :: MonadFree (UI n) m => IORef a -> m a
 readIORef' = embedIO . readIORef
 
 -- | writeIORef lifted to the Game monad
-writeIORef' :: IORef a -> a -> Game ()
+writeIORef' :: MonadFree (UI n) m => IORef a -> a -> m ()
 writeIORef' ref = embedIO . writeIORef ref
 
 -- | A variant of writeIORef for use on values in a
@@ -153,5 +155,5 @@ writeIORefF :: F.Foldable f => IORef a -> f a -> IO ()
 writeIORefF ref = F.mapM_ (writeIORef ref)
 
 -- | writeIORefF lifted to the Game monad
-writeIORefF' :: F.Foldable f => IORef a -> f a -> Game ()
+writeIORefF' :: (F.Foldable f, MonadFree (UI n) m) => IORef a -> f a -> m ()
 writeIORefF' ref = embedIO . writeIORefF ref
