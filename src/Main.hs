@@ -24,23 +24,28 @@ gameConfig = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
-main = void . runGameWithStateT gameConfig (newGame, False) $
+data FreeGameState = FreeGameState { _gameState     :: GameState
+                                   , _mouseDownPrev :: Bool
+                                   } deriving Show
+
+newFreeGameState = FreeGameState newGame False
+
+main = void . runGameWithStateT gameConfig newFreeGameState $
     forever $ do
-        (gameState, mouseDownPrev) <- get
+        freeGameState@(FreeGameState gameState mouseDownPrev) <- get
         mouseDownNow <- mouseButtonL
-        
         if not mouseDownPrev && mouseDownNow
           then if inProgress gameState
-                 then (\gs -> when (isJust gs) $ put (fromJust gs, mouseDownNow))
-                      =<< (gameState /?/)
-                      <$> coordinateToPosition
-                      <$> mousePosition
-                 else put (newGame, mouseDownNow)
-          else put (gameState, mouseDownNow)
-        (gameState', _) <- get
-        drawGameState gameState'
-
+                 then saveNewState mouseDownNow -- Save the updated state
+                      =<< (gameState /?/)       -- Update the game state
+                      <$> coordinateToPosition  -- Get square clicked
+                      <$> mousePosition         -- Get position of click
+                 else put $ FreeGameState newGame mouseDownNow -- Start a new game
+          else put $  freeGameState{_mouseDownPrev = mouseDownNow} -- Update just mouse click
+        drawGameState =<< _gameState <$> get
         tick
+  where
+    saveNewState mouse = F.mapM_ (\gs -> put $ FreeGameState gs mouse)
 
 -- | Convenience function to combine runGame and runStateT
 runGameWithStateT :: GUIParam -> b -> StateT b (F GUI) a -> IO (Maybe (a, b))
