@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, FlexibleContexts #-}
 
 import Codec.Picture.Repa (decodeImageRGBA, imgData)
 
-import Control.Monad.State (StateT, runStateT, get, put)
+import Control.Monad.State (MonadState, StateT, runStateT, get, put)
 import Control.Monad.Free.Church (F)
 
 import Data.Array (assocs)
@@ -31,20 +31,46 @@ data FreeGameState = FreeGameState { _gameState     :: GameState
 main :: IO ()
 main = void . runGameWithStateT gameConfig newFreeGameState $
     forever $ do
+        --
+        -- Get the current game state values.
+        --
         freeGameState@(FreeGameState gameState mouseDownPrev) <- get
+
+        --
+        -- Handle mouse events.
+        --
         mouseDownNow <- mouseButtonL
-        if not mouseDownPrev && mouseDownNow
+        if not mouseDownPrev && mouseDownNow -- When mouse clicked...
           then if inProgress gameState
+                 --
+                 -- ...if game is in progress attempt to place a
+                 -- piece on the game board...
+                 --
                  then saveNewState mouseDownNow -- Save the updated state
                       =<< (gameState /?/)       -- Update the game state
                       <$> coordinateToPosition  -- Get square clicked
                       <$> mousePosition         -- Get position of click
+                 --
+                 -- ...otherwise, the game is over and a new
+                 -- game will be started.
+                 --
                  else put $ FreeGameState newGame mouseDownNow -- Start a new game
+          --
+          -- If there was no mouse click,
+          -- just save the new mouse click state.
+          --
           else put $ freeGameState {_mouseDownPrev = mouseDownNow} -- Update just mouse click
+
+        --
+        -- Draw the game elements every tick.
+        --
         drawGameState =<< _gameState <$> get
+
         tick
-  where
-    saveNewState mouse = F.mapM_ (\gs -> put $ FreeGameState gs mouse)
+
+-- | Convenience function to save a  GameState wrapped in a Maybe
+saveNewState :: (F.Foldable t, MonadState FreeGameState m) => Bool -> t GameState -> m ()
+saveNewState mouse = F.mapM_ (\gs -> put $ FreeGameState gs mouse)
 
 -- | Initial game state for a blank TicTacToe board.
 newFreeGameState :: FreeGameState
