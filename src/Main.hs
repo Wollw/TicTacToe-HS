@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+
 import Codec.Picture.Repa (decodeImageRGBA, imgData)
 
 import Control.Monad.State (StateT, runStateT, get, put)
@@ -90,8 +91,9 @@ coordinateToPosition (V2 x y) = ( ceiling $ x / (width  / 3)
 
 -- | Converts a Square's position to a pixel location to draw a sprite.
 positionToCoordinate :: Position -> V2 Float
-positionToCoordinate (x, y) = V2 (( width/2)+(fromIntegral x-2)*( width/3))
-                                 ((height/2)+(fromIntegral y-2)*(height/3))
+positionToCoordinate (x,y) =
+  V2 (( width / 2 ) + (fromIntegral x - 2) * ( width / 3))
+     ((height / 2 ) + (fromIntegral y - 2) * (height / 3))
 
 -- | Convenience function for translating pictures that
 --   are wrapped in a Maybe.
