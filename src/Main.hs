@@ -20,11 +20,11 @@ height = 512
 -- | Configuration settings for free-game.
 gameConfig :: GUIParam
 gameConfig = def { _windowSize  = V2 width height
-                        , _windowTitle = "TicTacToe"
-                        }
+                 , _windowTitle = "TicTacToe"
+                 }
 
-data FreeGameState = FreeGameState { getGameState     :: GameState
-                                   , getMouseDownPrev :: Bool
+data FreeGameState = FreeGameState { _gameState     :: GameState
+                                   , _mouseDownPrev :: Bool
                                    } deriving Show
 
 main :: IO ()
@@ -39,8 +39,8 @@ main = void . runGameWithStateT gameConfig newFreeGameState $
                       <$> coordinateToPosition  -- Get square clicked
                       <$> mousePosition         -- Get position of click
                  else put $ FreeGameState newGame mouseDownNow -- Start a new game
-          else put $ freeGameState {getMouseDownPrev = mouseDownNow} -- Update just mouse click
-        drawGameState =<< getGameState <$> get
+          else put $ freeGameState {_mouseDownPrev = mouseDownNow} -- Update just mouse click
+        drawGameState =<< _gameState <$> get
         tick
   where
     saveNewState mouse = F.mapM_ (\gs -> put $ FreeGameState gs mouse)
