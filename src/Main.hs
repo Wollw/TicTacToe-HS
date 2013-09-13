@@ -83,7 +83,6 @@ borderImage = "border.png"
 backgroundImage :: FilePath
 backgroundImage = "background.png"
 
-
 -- | Converts a pixel location to a Square's position.
 coordinateToPosition :: V2 Float -> Position
 coordinateToPosition (V2 x y) = ( ceiling $ x / (width  / 3)
