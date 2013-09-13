@@ -23,12 +23,11 @@ gameConfig = def { _windowSize  = V2 width height
                         , _windowTitle = "TicTacToe"
                         }
 
-data FreeGameState = FreeGameState { _gameState     :: GameState
-                                   , _mouseDownPrev :: Bool
+data FreeGameState = FreeGameState { getGameState     :: GameState
+                                   , getMouseDownPrev :: Bool
                                    } deriving Show
 
-newFreeGameState = FreeGameState newGame False
-
+main :: IO ()
 main = void . runGameWithStateT gameConfig newFreeGameState $
     forever $ do
         freeGameState@(FreeGameState gameState mouseDownPrev) <- get
@@ -40,11 +39,15 @@ main = void . runGameWithStateT gameConfig newFreeGameState $
                       <$> coordinateToPosition  -- Get square clicked
                       <$> mousePosition         -- Get position of click
                  else put $ FreeGameState newGame mouseDownNow -- Start a new game
-          else put $  freeGameState{_mouseDownPrev = mouseDownNow} -- Update just mouse click
-        drawGameState =<< _gameState <$> get
+          else put $ freeGameState {getMouseDownPrev = mouseDownNow} -- Update just mouse click
+        drawGameState =<< getGameState <$> get
         tick
   where
     saveNewState mouse = F.mapM_ (\gs -> put $ FreeGameState gs mouse)
+
+-- | Initial game state for a blank TicTacToe board.
+newFreeGameState :: FreeGameState
+newFreeGameState = FreeGameState newGame False
 
 -- | Convenience function to combine runGame and runStateT
 runGameWithStateT :: GUIParam -> b -> StateT b (F GUI) a -> IO (Maybe (a, b))
