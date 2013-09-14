@@ -32,34 +32,9 @@ main :: IO ()
 main = void . runGameWithStateT gameConfig newFreeGameState $
     forever $ do
         --
-        -- Get the current game state values.
-        --
-        freeGameState@(FreeGameState gameState mouseDownPrev) <- get
-
-        --
         -- Handle mouse events.
         --
-        mouseDownNow <- mouseButtonL
-        if not mouseDownPrev && mouseDownNow -- When mouse clicked...
-        then if inProgress gameState
-             --
-             -- ...if game is in progress attempt to place a
-             -- piece on the game board...
-             --
-             then putGameStateF mouseDownNow -- Save the updated state
-                  =<< (gameState /?/)        -- Update the game state
-                  <$> coordinateToPosition   -- Get square clicked
-                  <$> mousePosition          -- Get position of click
-             --
-             -- ...otherwise, the game is over and a new
-             -- game will be started.
-             --
-             else put $ FreeGameState newGame mouseDownNow -- Start a new game
-        --
-        -- If there was no mouse click,
-        -- just save the new mouse click state.
-        --
-        else put $ freeGameState {_mouseDownPrev = mouseDownNow} -- Update just mouse click
+        mouseEventHandler =<< mouseButtonL
 
         --
         -- Draw the game elements every tick.
@@ -67,6 +42,48 @@ main = void . runGameWithStateT gameConfig newFreeGameState $
         drawGameState =<< _gameState <$> get
 
         tick
+
+-- | Event handler for mouse events.
+--
+--   This function does one of two things:
+--
+--      1) If the mouse was just clicked and the game is in
+--         progress it attempts to place a new piece on the board
+--         and create an updated GameState for it.
+--
+--      2) If the mouse was just clicked and  the game is not
+--         in progress it starts a new game with a blank GameState.
+--
+mouseEventHandler :: (Functor m, MonadState FreeGameState m, Mouse m) => Bool -> m ()
+mouseEventHandler mouseDown = do
+    --
+    -- Get the current game state values.
+    --
+    freeGameState@(FreeGameState gameState mouseDownPrev) <- get
+    
+    --
+    -- Mouse event logic.
+    --
+    if not mouseDownPrev && mouseDown -- When mouse clicked...
+    then if inProgress gameState
+         --
+         -- ...if game is in progress attempt to place a
+         -- piece on the game board...
+         --
+         then putGameStateF mouseDown  -- Save the updated state
+              =<< (gameState /?/)      -- Update the game state
+              <$> coordinateToPosition -- Get square clicked
+              <$> mousePosition        -- Get position of click
+         --
+         -- ...otherwise, the game is over and a new
+         -- game will be started.
+         --
+         else put $ FreeGameState newGame mouseDown -- Start a new game
+    --
+    -- If there was no mouse click,
+    -- just save the new mouse click state.
+    --
+    else put $ freeGameState {_mouseDownPrev = mouseDown} -- Update just mouse click
 
 -- | Convenience function to save a GameState wrapped in a Foldable
 putGameStateF :: (F.Foldable t, MonadState FreeGameState m) => Bool -> t GameState -> m ()
