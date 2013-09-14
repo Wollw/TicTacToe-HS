@@ -48,7 +48,7 @@ newGame = GameState X emptyBoard InProgress
 -- | A 3x3 array of Squares representing a board with
 --   no pieces placed on it.
 emptyBoard :: Board
-emptyBoard = listArray ((1,1),(3,3)) $ replicate 9 Nothing
+emptyBoard = listArray ((1,1),(3,3)) . replicate 9 $ Nothing
 
 -- | This operator attempts to place a player's piece
 --   on the board and returns the updated game state
@@ -71,8 +71,8 @@ updateGamePhase :: GameState -> GameState
 updateGamePhase gameState = case maybeFullRows gameState of
     Just xs -> gameState { phase = Won . fromJust . head $ xs }
     Nothing -> if boardFull gameState
-                 then gameState { phase = Draw }
-                 else gameState { phase = InProgress }
+               then gameState { phase = Draw }
+               else gameState { phase = InProgress }
   where
     boardFull     = notElem Nothing . elems . board
     maybeFullRows = find full . rows . board

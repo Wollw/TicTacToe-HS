@@ -24,6 +24,8 @@ gameConfig = def { _windowSize  = V2 width height
                  , _windowTitle = "TicTacToe"
                  }
 
+-- | Representation of the game state and relevant
+--   values used by the main game loop.
 data FreeGameState = FreeGameState { _gameState     :: GameState
                                    , _mouseDownPrev :: Bool
                                    } deriving Show
