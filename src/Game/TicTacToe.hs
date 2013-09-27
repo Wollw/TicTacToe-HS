@@ -4,7 +4,7 @@
 module Game.TicTacToe where
 
 import Data.Array (Array, listArray, (//), elems, (!), indices)
-import Data.List (transpose, find)
+import Data.List (transpose, find, nub)
 import Data.List.Split (chunksOf)
 import Data.Maybe (isJust, fromJust, isNothing)
 
@@ -77,8 +77,7 @@ updateGamePhase gameState = case maybeFullRows gameState of
     boardFull     = notElem Nothing . elems . board
     maybeFullRows = find full . rows . board
     toLists       = chunksOf 3 . elems
-    full [x,y,z]  = x == y && y == z && isJust x
-    full _        = False -- Fail if not three values
+    full xs       = (length . nub) xs == 1 && (isJust . head) xs
     rows b        = toLists b ++ (transpose . toLists) b ++ diagonals b
     diagonals b   = [ [b ! (1,1), b ! (2,2), b ! (3,3)]
                     , [b ! (3,1), b ! (2,2), b ! (1,3)] ]
